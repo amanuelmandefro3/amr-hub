@@ -7,6 +7,13 @@ export type IssuePriority =
   | "URGENT";
 export type IssueKind = "BUG" | "FEATURE" | "TASK";
 
+export type IssueComment = {
+  id: string;
+  body: string;
+  author: string;
+  createdAt: string;
+};
+
 export type Issue = {
   id: string;
   title: string;
@@ -16,6 +23,7 @@ export type Issue = {
   kind: IssueKind;
   assignee: string;
   createdAt: string;
+  comments?: IssueComment[];
 };
 
 export const DEMO_ISSUES: Issue[] = [
@@ -29,6 +37,20 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "BUG",
     assignee: "Amanuel R.",
     createdAt: "2026-07-25T07:20:00.000Z",
+    comments: [
+      {
+        id: "comment-128-1",
+        body: "I can reproduce this consistently when the promotion reduces the order total below the free-shipping threshold.",
+        author: "Maya Chen",
+        createdAt: "2026-07-25T08:05:00.000Z",
+      },
+      {
+        id: "comment-128-2",
+        body: "I am checking the shipping recalculation path and will add a regression test with the fix.",
+        author: "Amanuel R.",
+        createdAt: "2026-07-25T09:10:00.000Z",
+      },
+    ],
   },
   {
     id: "AMR-127",
@@ -62,6 +84,14 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "BUG",
     assignee: "Amanuel R.",
     createdAt: "2026-07-23T15:25:00.000Z",
+    comments: [
+      {
+        id: "comment-125-1",
+        body: "Confirmed at 200% browser zoom on a 390px viewport.",
+        author: "Jon Bell",
+        createdAt: "2026-07-23T16:10:00.000Z",
+      },
+    ],
   },
   {
     id: "AMR-124",

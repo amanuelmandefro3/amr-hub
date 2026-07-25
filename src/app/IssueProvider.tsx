@@ -10,6 +10,7 @@ import {
 import {
   DEMO_ISSUES,
   type Issue,
+  type IssueComment,
   type IssueKind,
   type IssuePriority,
   type IssueStatus,
@@ -27,6 +28,7 @@ type IssueContextValue = {
   issues: Issue[];
   createIssue: (issue: NewIssue) => Issue;
   updateStatus: (id: string, status: IssueStatus) => void;
+  addComment: (issueId: string, body: string) => IssueComment;
   resetDemo: () => void;
 };
 
@@ -81,6 +83,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
         id: `AMR-${maxId + 1}`,
         status: "OPEN",
         createdAt: new Date().toISOString(),
+        comments: [],
       };
 
       saveIssues([issue, ...issues]);
@@ -97,11 +100,30 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const addComment = useCallback((issueId: string, body: string) => {
+    const comment: IssueComment = {
+      id: `comment-${Date.now()}`,
+      body: body.trim(),
+      author: "Amanuel R.",
+      createdAt: new Date().toISOString(),
+    };
+
+    saveIssues(
+      getClientIssues().map((issue) =>
+        issue.id === issueId
+          ? { ...issue, comments: [...(issue.comments ?? []), comment] }
+          : issue,
+      ),
+    );
+
+    return comment;
+  }, []);
+
   const resetDemo = useCallback(() => saveIssues(DEMO_ISSUES), []);
 
   const value = useMemo(
-    () => ({ issues, createIssue, updateStatus, resetDemo }),
-    [issues, createIssue, updateStatus, resetDemo],
+    () => ({ issues, createIssue, updateStatus, addComment, resetDemo }),
+    [issues, createIssue, updateStatus, addComment, resetDemo],
   );
 
   return (

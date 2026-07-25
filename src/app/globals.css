@@ -1363,6 +1363,13 @@ h2 {
   gap: 16px;
 }
 
+.detail-main-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .description-panel {
   min-height: 260px;
 }
@@ -1457,6 +1464,101 @@ h2 {
   color: var(--gray-500);
   font-size: 12px;
   line-height: 1.55;
+}
+
+.comments-panel > .panel-header > svg {
+  color: var(--gray-400);
+}
+
+.comment-list {
+  margin: 15px -18px 0;
+}
+
+.comment {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.comment > div {
+  min-width: 0;
+}
+
+.comment header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.comment header strong {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.comment header time {
+  color: var(--gray-400);
+  font-size: 9px;
+}
+
+.comment p {
+  margin: 0;
+  color: var(--gray-700);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.comment-form {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin: 0 -18px -18px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--gray-200);
+  background: var(--gray-25);
+}
+
+.comment-form label {
+  min-width: 0;
+}
+
+.comment-form textarea {
+  display: block;
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+  padding: 9px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  outline: 0;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.comment-form textarea:focus {
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 3px var(--green-50);
+}
+
+.comment-form textarea::placeholder {
+  color: var(--gray-400);
+}
+
+.comment-form .primary-button {
+  height: 34px;
+  padding: 0 11px;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  border-color: var(--gray-300);
+  background: var(--gray-300);
+  transform: none;
 }
 
 @media (max-width: 1080px) {
@@ -1680,6 +1782,15 @@ h2 {
   .form-actions .secondary-button,
   .form-actions .primary-button {
     flex: 1;
+  }
+
+  .comment-form {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .comment-form .primary-button {
+    grid-column: 2;
+    justify-self: end;
   }
 }
 

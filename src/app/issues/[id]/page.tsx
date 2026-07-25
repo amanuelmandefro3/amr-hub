@@ -1,8 +1,9 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, CalendarDays, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, MessageSquare, Send, UserRound } from "lucide-react";
 import { useIssues } from "../../IssueProvider";
 import {
   KIND_LABELS,
@@ -20,6 +21,23 @@ function formatDate(value: string) {
     day: "numeric",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function formatCommentDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2);
 }
 
 function IssueProperty({
@@ -60,7 +78,7 @@ function IssueNotFound({ id }: { id: string }) {
 
 export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
-  const { issues } = useIssues();
+  const { issues, addComment } = useIssues();
   const id = decodeURIComponent(params.id);
   const issue = issues.find((candidate) => candidate.id === id);
 
@@ -68,10 +86,28 @@ export default function IssueDetailPage() {
     return <IssueNotFound id={id} />;
   }
 
-  return <IssueDetail issue={issue} />;
+  return <IssueDetail issue={issue} onAddComment={addComment} />;
 }
 
-function IssueDetail({ issue }: { issue: Issue }) {
+function IssueDetail({
+  issue,
+  onAddComment,
+}: {
+  issue: Issue;
+  onAddComment: (issueId: string, body: string) => unknown;
+}) {
+  const [comment, setComment] = useState("");
+  const comments = issue.comments ?? [];
+
+  const handleComment = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const body = comment.trim();
+    if (body.length < 2) return;
+
+    onAddComment(issue.id, body);
+    setComment("");
+  };
+
   return (
     <div className="page detail-page">
       <Link className="back-link" href="/issues">
@@ -98,15 +134,72 @@ function IssueDetail({ issue }: { issue: Issue }) {
       </header>
 
       <div className="detail-layout">
-        <section className="panel description-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Description</h2>
-              <p>Context and expected outcome for this issue</p>
+        <div className="detail-main-column">
+          <section className="panel description-panel">
+            <div className="panel-header">
+              <div>
+                <h2>Description</h2>
+                <p>Context and expected outcome for this issue</p>
+              </div>
             </div>
-          </div>
-          <p className="issue-description">{issue.description}</p>
-        </section>
+            <p className="issue-description">{issue.description}</p>
+          </section>
+
+          <section className="panel comments-panel">
+            <div className="panel-header">
+              <div>
+                <h2>Discussion</h2>
+                <p>
+                  {comments.length === 0
+                    ? "No comments yet"
+                    : `${comments.length} ${
+                        comments.length === 1 ? "comment" : "comments"
+                      }`}
+                </p>
+              </div>
+              <MessageSquare size={17} aria-hidden="true" />
+            </div>
+
+            <div className="comment-list">
+              {comments.map((item) => (
+                <article className="comment" key={item.id}>
+                  <span className="avatar">{getInitials(item.author)}</span>
+                  <div>
+                    <header>
+                      <strong>{item.author}</strong>
+                      <time dateTime={item.createdAt}>
+                        {formatCommentDate(item.createdAt)}
+                      </time>
+                    </header>
+                    <p>{item.body}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <form className="comment-form" onSubmit={handleComment}>
+              <span className="avatar avatar-green">AR</span>
+              <label>
+                <span className="sr-only">Add a comment</span>
+                <textarea
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value)}
+                  placeholder="Add context, an update, or a question..."
+                  rows={3}
+                  maxLength={1000}
+                />
+              </label>
+              <button
+                className="primary-button"
+                type="submit"
+                disabled={comment.trim().length < 2}
+              >
+                <Send size={15} aria-hidden="true" />
+                Comment
+              </button>
+            </form>
+          </section>
+        </div>
 
         <aside className="panel properties-panel" aria-label="Issue properties">
           <div className="panel-header">
@@ -133,11 +226,7 @@ function IssueDetail({ issue }: { issue: Issue }) {
                 <span className="avatar">
                   {issue.assignee === "Unassigned"
                     ? "?"
-                    : issue.assignee
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)}
+                    : getInitials(issue.assignee)}
                 </span>
                 {issue.assignee}
               </span>
