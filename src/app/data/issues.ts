@@ -1,0 +1,131 @@
+export type IssueStatus = "BACKLOG" | "OPEN" | "IN_PROGRESS" | "DONE";
+export type IssuePriority =
+  | "NO_PRIORITY"
+  | "LOW"
+  | "MEDIUM"
+  | "HIGH"
+  | "URGENT";
+export type IssueKind = "BUG" | "FEATURE" | "TASK";
+
+export type Issue = {
+  id: string;
+  title: string;
+  description: string;
+  status: IssueStatus;
+  priority: IssuePriority;
+  kind: IssueKind;
+  assignee: string;
+  createdAt: string;
+};
+
+export const DEMO_ISSUES: Issue[] = [
+  {
+    id: "AMR-128",
+    title: "Checkout stalls after applying a promo code",
+    description:
+      "The checkout request occasionally remains pending when a valid promo code is applied.",
+    status: "IN_PROGRESS",
+    priority: "URGENT",
+    kind: "BUG",
+    assignee: "Amanuel R.",
+    createdAt: "2026-07-25T07:20:00.000Z",
+  },
+  {
+    id: "AMR-127",
+    title: "Add saved views for support triage",
+    description:
+      "Let support leads save combinations of status, priority, and assignee filters.",
+    status: "OPEN",
+    priority: "HIGH",
+    kind: "FEATURE",
+    assignee: "Maya Chen",
+    createdAt: "2026-07-24T13:40:00.000Z",
+  },
+  {
+    id: "AMR-126",
+    title: "Improve empty state for new workspaces",
+    description:
+      "Guide first-time teams toward creating and assigning their first issue.",
+    status: "DONE",
+    priority: "MEDIUM",
+    kind: "TASK",
+    assignee: "Jon Bell",
+    createdAt: "2026-07-24T08:10:00.000Z",
+  },
+  {
+    id: "AMR-125",
+    title: "Mobile navigation overlaps issue actions",
+    description:
+      "The primary action is partially hidden on narrow screens with browser zoom enabled.",
+    status: "OPEN",
+    priority: "HIGH",
+    kind: "BUG",
+    assignee: "Amanuel R.",
+    createdAt: "2026-07-23T15:25:00.000Z",
+  },
+  {
+    id: "AMR-124",
+    title: "Define SLA labels for customer-impacting bugs",
+    description:
+      "Document and add labels for response-time targets by severity.",
+    status: "BACKLOG",
+    priority: "MEDIUM",
+    kind: "TASK",
+    assignee: "Unassigned",
+    createdAt: "2026-07-22T12:15:00.000Z",
+  },
+  {
+    id: "AMR-123",
+    title: "Export filtered issues to CSV",
+    description:
+      "Allow team leads to export the current issue view for weekly reporting.",
+    status: "BACKLOG",
+    priority: "LOW",
+    kind: "FEATURE",
+    assignee: "Maya Chen",
+    createdAt: "2026-07-21T16:50:00.000Z",
+  },
+  {
+    id: "AMR-122",
+    title: "Incorrect avatar shown after reassignment",
+    description:
+      "The activity feed updates but the issue header retains the previous owner.",
+    status: "DONE",
+    priority: "MEDIUM",
+    kind: "BUG",
+    assignee: "Jon Bell",
+    createdAt: "2026-07-20T10:30:00.000Z",
+  },
+  {
+    id: "AMR-121",
+    title: "Create keyboard shortcut reference",
+    description:
+      "Add a searchable reference for navigation and issue actions.",
+    status: "OPEN",
+    priority: "NO_PRIORITY",
+    kind: "TASK",
+    assignee: "Unassigned",
+    createdAt: "2026-07-19T09:05:00.000Z",
+  },
+];
+
+export const STATUS_LABELS: Record<IssueStatus, string> = {
+  BACKLOG: "Backlog",
+  OPEN: "Open",
+  IN_PROGRESS: "In progress",
+  DONE: "Done",
+};
+
+export const PRIORITY_LABELS: Record<IssuePriority, string> = {
+  NO_PRIORITY: "No priority",
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  URGENT: "Urgent",
+};
+
+export const KIND_LABELS: Record<IssueKind, string> = {
+  BUG: "Bug",
+  FEATURE: "Feature",
+  TASK: "Task",
+};

@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# AMR Hub
 
-## Getting Started
+AMR Hub is a focused issue-triage and delivery workspace for software teams.
+The portfolio demo is designed to be immediately usable: it ships with realistic
+sample work, persists changes in the browser, and does not require an account or
+database to explore.
 
-First, run the development server:
+## Product experience
+
+- Delivery overview with active work, completion rate, urgency, throughput, and
+  cycle health
+- Searchable and filterable issue workspace
+- Inline workflow status changes
+- Validated issue creation with type, priority, and ownership
+- Responsive desktop and mobile navigation
+- Keyboard shortcut: press `C` outside a form field to create an issue
+- Local persistence so a reviewer can create and update work
+- Branded Open Graph and social-sharing preview
+
+## Run locally
+
+Requires Node.js 20.9 or newer.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the local URL printed by Next.js. Production checks:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run lint
+npm run build
+npm audit --omit=dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Architecture
 
-## Learn More
+- Next.js 16 App Router, React 19, and TypeScript
+- Tailwind/PostCSS build pipeline with a custom operational design system
+- Lucide icons
+- Zod validation
+- Prisma and MySQL integration boundary at `src/app/api/issue/route.ts`
 
-To learn more about Next.js, take a look at the following resources:
+The visible portfolio workspace currently stores demo changes in `localStorage`.
+This is intentional: reviewers get a complete interaction loop without
+provisioning infrastructure. The existing API route is retained as the starting
+point for durable server persistence. Copy `.env.example` to `.env`, provide a
+MySQL connection, and run the Prisma migrations before using that route.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Product roadmap
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+The next production milestone should replace demo storage with authenticated
+server data. The highest-value sequence is:
 
-## Deploy on Vercel
+1. Authentication, organizations, membership roles, and database-backed CRUD
+2. Issue detail pages with comments, activity history, attachments, labels, and
+   due dates
+3. Saved views, backlog triage, cycles, estimates, and capacity
+4. Notifications plus GitHub, Slack, and error-monitoring integrations
+5. Automated API/component tests, accessibility checks, observability, rate
+   limiting, backups, and deployment runbooks
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+This scope follows the strongest patterns in established trackers: issues need
+clear ownership, priority, workflow state, and optional planning properties
+before adding heavier automation. See [Linear's issue model](https://linear.app/docs/conceptual-model),
+[Linear triage](https://linear.app/docs/triage), and
+[Jira bug tracking](https://www.atlassian.com/software/jira/features/bug-tracking).
