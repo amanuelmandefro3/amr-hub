@@ -24,10 +24,18 @@ type NewIssue = {
   assignee: string;
 };
 
+type IssueUpdates = Partial<
+  Pick<
+    Issue,
+    "title" | "description" | "status" | "priority" | "kind" | "assignee"
+  >
+>;
+
 type IssueContextValue = {
   issues: Issue[];
   createIssue: (issue: NewIssue) => Issue;
   updateStatus: (id: string, status: IssueStatus) => void;
+  updateIssue: (id: string, updates: IssueUpdates) => void;
   addComment: (issueId: string, body: string) => IssueComment;
   resetDemo: () => void;
 };
@@ -100,6 +108,14 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const updateIssue = useCallback((id: string, updates: IssueUpdates) => {
+    saveIssues(
+      getClientIssues().map((issue) =>
+        issue.id === id ? { ...issue, ...updates } : issue,
+      ),
+    );
+  }, []);
+
   const addComment = useCallback((issueId: string, body: string) => {
     const comment: IssueComment = {
       id: `comment-${Date.now()}`,
@@ -122,8 +138,15 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
   const resetDemo = useCallback(() => saveIssues(DEMO_ISSUES), []);
 
   const value = useMemo(
-    () => ({ issues, createIssue, updateStatus, addComment, resetDemo }),
-    [issues, createIssue, updateStatus, addComment, resetDemo],
+    () => ({
+      issues,
+      createIssue,
+      updateStatus,
+      updateIssue,
+      addComment,
+      resetDemo,
+    }),
+    [issues, createIssue, updateStatus, updateIssue, addComment, resetDemo],
   );
 
   return (

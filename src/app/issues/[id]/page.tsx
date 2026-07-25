@@ -3,11 +3,25 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, CalendarDays, MessageSquare, Send, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Check,
+  MessageSquare,
+  Pencil,
+  Send,
+  UserRound,
+  X,
+} from "lucide-react";
 import { useIssues } from "../../IssueProvider";
 import {
   KIND_LABELS,
+  PRIORITY_LABELS,
+  STATUS_LABELS,
   type Issue,
+  type IssueKind,
+  type IssuePriority,
+  type IssueStatus,
 } from "../../data/issues";
 import {
   KindIcon,
@@ -78,7 +92,7 @@ function IssueNotFound({ id }: { id: string }) {
 
 export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
-  const { issues, addComment } = useIssues();
+  const { issues, addComment, updateIssue } = useIssues();
   const id = decodeURIComponent(params.id);
   const issue = issues.find((candidate) => candidate.id === id);
 
@@ -86,18 +100,39 @@ export default function IssueDetailPage() {
     return <IssueNotFound id={id} />;
   }
 
-  return <IssueDetail issue={issue} onAddComment={addComment} />;
+  return (
+    <IssueDetail
+      issue={issue}
+      onAddComment={addComment}
+      onUpdateIssue={updateIssue}
+    />
+  );
 }
 
 function IssueDetail({
   issue,
   onAddComment,
+  onUpdateIssue,
 }: {
   issue: Issue;
   onAddComment: (issueId: string, body: string) => unknown;
+  onUpdateIssue: (
+    issueId: string,
+    updates: Partial<
+      Pick<
+        Issue,
+        "title" | "description" | "status" | "priority" | "kind" | "assignee"
+      >
+    >,
+  ) => void;
 }) {
   const [comment, setComment] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(issue.title);
+  const [draftDescription, setDraftDescription] = useState(issue.description);
   const comments = issue.comments ?? [];
+  const canSave =
+    draftTitle.trim().length >= 4 && draftDescription.trim().length >= 12;
 
   const handleComment = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,6 +143,27 @@ function IssueDetail({
     setComment("");
   };
 
+  const startEditing = () => {
+    setDraftTitle(issue.title);
+    setDraftDescription(issue.description);
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setDraftTitle(issue.title);
+    setDraftDescription(issue.description);
+    setIsEditing(false);
+  };
+
+  const saveEditing = () => {
+    if (!canSave) return;
+    onUpdateIssue(issue.id, {
+      title: draftTitle.trim(),
+      description: draftDescription.trim(),
+    });
+    setIsEditing(false);
+  };
+
   return (
     <div className="page detail-page">
       <Link className="back-link" href="/issues">
@@ -116,13 +172,58 @@ function IssueDetail({
       </Link>
 
       <header className="detail-header">
-        <div className="detail-identity">
-          <KindIcon kind={issue.kind} />
-          <span>{issue.id}</span>
-          <span aria-hidden="true">/</span>
-          <span>{KIND_LABELS[issue.kind]}</span>
+        <div className="detail-header-top">
+          <div className="detail-identity">
+            <KindIcon kind={issue.kind} />
+            <span>{issue.id}</span>
+            <span aria-hidden="true">/</span>
+            <span>{KIND_LABELS[issue.kind]}</span>
+          </div>
+          <div className="detail-actions">
+            {isEditing ? (
+              <>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={cancelEditing}
+                >
+                  <X size={15} aria-hidden="true" />
+                  Cancel
+                </button>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={saveEditing}
+                  disabled={!canSave}
+                >
+                  <Check size={15} aria-hidden="true" />
+                  Save
+                </button>
+              </>
+            ) : (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={startEditing}
+              >
+                <Pencil size={15} aria-hidden="true" />
+                Edit
+              </button>
+            )}
+          </div>
         </div>
-        <h1>{issue.title}</h1>
+        {isEditing ? (
+          <label className="detail-title-field">
+            <span className="sr-only">Issue title</span>
+            <input
+              value={draftTitle}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              maxLength={255}
+            />
+          </label>
+        ) : (
+          <h1>{issue.title}</h1>
+        )}
         <div className="detail-summary">
           <StatusBadge status={issue.status} />
           <PriorityBadge priority={issue.priority} />
@@ -142,7 +243,20 @@ function IssueDetail({
                 <p>Context and expected outcome for this issue</p>
               </div>
             </div>
-            <p className="issue-description">{issue.description}</p>
+            {isEditing ? (
+              <label className="detail-description-field">
+                <span className="sr-only">Issue description</span>
+                <textarea
+                  value={draftDescription}
+                  onChange={(event) => setDraftDescription(event.target.value)}
+                  rows={8}
+                  maxLength={2000}
+                />
+                <small>{draftDescription.length} / 2,000</small>
+              </label>
+            ) : (
+              <p className="issue-description">{issue.description}</p>
+            )}
           </section>
 
           <section className="panel comments-panel">
@@ -210,26 +324,85 @@ function IssueDetail({
           </div>
           <div className="property-list">
             <IssueProperty label="Status">
-              <StatusBadge status={issue.status} />
+              <label className="editable-property">
+                <span className={`property-dot status-${issue.status.toLowerCase()}`} />
+                <span className="sr-only">Issue status</span>
+                <select
+                  value={issue.status}
+                  onChange={(event) =>
+                    onUpdateIssue(issue.id, {
+                      status: event.target.value as IssueStatus,
+                    })
+                  }
+                >
+                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    <option value={value} key={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </IssueProperty>
             <IssueProperty label="Priority">
-              <PriorityBadge priority={issue.priority} />
+              <label className="editable-property">
+                <span className={`property-dot priority-${issue.priority.toLowerCase()}`} />
+                <span className="sr-only">Issue priority</span>
+                <select
+                  value={issue.priority}
+                  onChange={(event) =>
+                    onUpdateIssue(issue.id, {
+                      priority: event.target.value as IssuePriority,
+                    })
+                  }
+                >
+                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+                    <option value={value} key={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </IssueProperty>
             <IssueProperty label="Type">
-              <span className="property-kind">
+              <label className="editable-property property-kind">
                 <KindIcon kind={issue.kind} />
-                {KIND_LABELS[issue.kind]}
-              </span>
+                <span className="sr-only">Issue type</span>
+                <select
+                  value={issue.kind}
+                  onChange={(event) =>
+                    onUpdateIssue(issue.id, {
+                      kind: event.target.value as IssueKind,
+                    })
+                  }
+                >
+                  {Object.entries(KIND_LABELS).map(([value, label]) => (
+                    <option value={value} key={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </IssueProperty>
             <IssueProperty label="Assignee">
-              <span className="property-person">
+              <label className="editable-property property-person">
                 <span className="avatar">
                   {issue.assignee === "Unassigned"
                     ? "?"
                     : getInitials(issue.assignee)}
                 </span>
-                {issue.assignee}
-              </span>
+                <span className="sr-only">Issue assignee</span>
+                <select
+                  value={issue.assignee}
+                  onChange={(event) =>
+                    onUpdateIssue(issue.id, { assignee: event.target.value })
+                  }
+                >
+                  <option>Unassigned</option>
+                  <option>Amanuel R.</option>
+                  <option>Maya Chen</option>
+                  <option>Jon Bell</option>
+                </select>
+              </label>
             </IssueProperty>
             <IssueProperty label="Created">
               <span className="property-date">

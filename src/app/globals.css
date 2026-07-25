@@ -1319,11 +1319,19 @@ h2 {
   margin-bottom: 28px;
 }
 
+.detail-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
 .detail-identity {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
   color: var(--gray-500);
   font-size: 11px;
   font-weight: 580;
@@ -1334,11 +1342,73 @@ h2 {
   height: 25px;
 }
 
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.detail-actions .primary-button,
+.detail-actions .secondary-button {
+  height: 34px;
+  padding: 0 11px;
+}
+
 .detail-header h1 {
   max-width: 780px;
   margin-bottom: 14px;
   font-size: 26px;
   line-height: 1.3;
+}
+
+.detail-title-field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.detail-title-field input,
+.detail-description-field textarea {
+  width: 100%;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  outline: 0;
+  color: var(--gray-800);
+  background: #fff;
+}
+
+.detail-title-field input {
+  min-height: 46px;
+  padding: 7px 10px;
+  font-size: 22px;
+  font-weight: 680;
+  line-height: 1.3;
+}
+
+.detail-title-field input:focus,
+.detail-description-field textarea:focus {
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 3px var(--green-50);
+}
+
+.detail-description-field {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+}
+
+.detail-description-field textarea {
+  min-height: 170px;
+  resize: vertical;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.detail-description-field small {
+  align-self: flex-end;
+  margin-top: 5px;
+  color: var(--gray-400);
+  font-size: 9px;
 }
 
 .detail-summary {
@@ -1420,6 +1490,75 @@ h2 {
   min-width: 0;
   align-items: center;
   gap: 7px;
+}
+
+.editable-property {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.editable-property select {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 20px 0 5px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  outline: 0;
+  color: var(--gray-700);
+  background: transparent;
+  font-size: 11px;
+}
+
+.editable-property select:hover {
+  border-color: var(--gray-200);
+  background: var(--gray-25);
+}
+
+.editable-property select:focus {
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 2px var(--green-50);
+}
+
+.property-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border: 1px solid var(--gray-400);
+  border-radius: 50%;
+}
+
+.property-dot.status-done {
+  border-color: var(--green-500);
+  background: var(--green-500);
+}
+
+.property-dot.status-in_progress {
+  border-color: var(--blue-500);
+  background: var(--blue-500);
+}
+
+.property-dot.status-open,
+.property-dot.priority-medium {
+  border-color: var(--amber-500);
+  background: var(--amber-500);
+}
+
+.property-dot.priority-urgent,
+.property-dot.priority-high {
+  border-color: var(--red-500);
+  background: var(--red-500);
+}
+
+.property-dot.priority-low {
+  border-color: var(--blue-500);
+  background: var(--blue-500);
+}
+
+.property-kind .kind-icon {
+  flex: 0 0 auto;
 }
 
 .property-kind .kind-icon {
@@ -1710,6 +1849,17 @@ h2 {
 
   .page-header .primary-button {
     width: 38px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .detail-header-top {
+    align-items: flex-start;
+  }
+
+  .detail-actions .secondary-button,
+  .detail-actions .primary-button {
+    width: 34px;
     padding: 0;
     font-size: 0;
   }
