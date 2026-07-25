@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Issue } from "../data/issues";
 import { KindIcon, PriorityBadge, StatusBadge } from "./IssueVisuals";
 
@@ -19,7 +20,7 @@ export function IssueVisualRow({
     <div className={compact ? "issue-visual-row compact" : "issue-visual-row"}>
       <KindIcon kind={issue.kind} />
       <div className="issue-title-cell">
-        <strong>{issue.title}</strong>
+        <Link href={`/issues/${issue.id}`}>{issue.title}</Link>
         <span>{issue.id}</span>
       </div>
       {!compact && <PriorityBadge priority={issue.priority} />}

@@ -171,7 +171,7 @@ export default function IssuesPage() {
               <div className="issue-main-cell">
                 <KindIcon kind={issue.kind} />
                 <div>
-                  <strong>{issue.title}</strong>
+                  <Link href={`/issues/${issue.id}`}>{issue.title}</Link>
                   <span>{issue.id}</span>
                 </div>
               </div>
