@@ -7,9 +7,13 @@ import {
   ArrowLeft,
   CalendarDays,
   Check,
+  CirclePlus,
+  FilePenLine,
   MessageSquare,
   Pencil,
+  RefreshCcw,
   Send,
+  Tag,
   UserRound,
   X,
 } from "lucide-react";
@@ -19,6 +23,7 @@ import {
   PRIORITY_LABELS,
   STATUS_LABELS,
   type Issue,
+  type IssueActivity,
   type IssueKind,
   type IssuePriority,
   type IssueStatus,
@@ -52,6 +57,27 @@ function getInitials(name: string) {
     .map((part) => part[0])
     .join("")
     .slice(0, 2);
+}
+
+function ActivityIcon({ type }: { type: IssueActivity["type"] }) {
+  const Icon =
+    type === "CREATED"
+      ? CirclePlus
+      : type === "COMMENT_ADDED"
+        ? MessageSquare
+        : type === "ASSIGNEE_CHANGED"
+          ? UserRound
+          : type === "CONTENT_UPDATED"
+            ? FilePenLine
+            : type === "TYPE_CHANGED" || type === "PRIORITY_CHANGED"
+              ? Tag
+              : RefreshCcw;
+
+  return (
+    <span className={`activity-icon activity-${type.toLowerCase()}`}>
+      <Icon size={14} aria-hidden="true" />
+    </span>
+  );
 }
 
 function IssueProperty({
@@ -131,6 +157,17 @@ function IssueDetail({
   const [draftTitle, setDraftTitle] = useState(issue.title);
   const [draftDescription, setDraftDescription] = useState(issue.description);
   const comments = issue.comments ?? [];
+  const creationActivity: IssueActivity = {
+    id: `${issue.id}-created`,
+    type: "CREATED",
+    description: "created this issue",
+    actor: "Amanuel R.",
+    createdAt: issue.createdAt,
+  };
+  const activity = [creationActivity, ...(issue.activity ?? [])].sort(
+    (left, right) =>
+      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+  );
   const canSave =
     draftTitle.trim().length >= 4 && draftDescription.trim().length >= 12;
 
@@ -312,6 +349,30 @@ function IssueDetail({
                 Comment
               </button>
             </form>
+          </section>
+
+          <section className="panel activity-panel">
+            <div className="panel-header">
+              <div>
+                <h2>Activity</h2>
+                <p>Complete history for this issue</p>
+              </div>
+            </div>
+            <div className="activity-list">
+              {activity.map((event) => (
+                <article className="activity-item" key={event.id}>
+                  <ActivityIcon type={event.type} />
+                  <div>
+                    <p>
+                      <strong>{event.actor}</strong> {event.description}
+                    </p>
+                    <time dateTime={event.createdAt}>
+                      {formatCommentDate(event.createdAt)}
+                    </time>
+                  </div>
+                </article>
+              ))}
+            </div>
           </section>
         </div>
 

@@ -1700,6 +1700,78 @@ h2 {
   transform: none;
 }
 
+.activity-list {
+  margin: 15px -18px -18px;
+}
+
+.activity-item {
+  position: relative;
+  display: grid;
+  min-height: 57px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.activity-item:not(:last-child)::after {
+  position: absolute;
+  top: 40px;
+  bottom: -17px;
+  left: 31px;
+  width: 1px;
+  background: var(--gray-200);
+  content: "";
+}
+
+.activity-icon {
+  z-index: 1;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--gray-200);
+  border-radius: 50%;
+  color: var(--gray-500);
+  background: #fff;
+}
+
+.activity-status_changed {
+  color: var(--blue-600);
+  background: var(--blue-50);
+}
+
+.activity-priority_changed {
+  color: var(--red-500);
+  background: var(--red-50);
+}
+
+.activity-comment_added {
+  color: var(--green-600);
+  background: var(--green-50);
+}
+
+.activity-item > div:last-child {
+  padding-top: 2px;
+}
+
+.activity-item p {
+  margin: 0 0 2px;
+  color: var(--gray-600);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.activity-item p strong {
+  color: var(--gray-800);
+  font-weight: 640;
+}
+
+.activity-item time {
+  color: var(--gray-400);
+  font-size: 9px;
+}
+
 @media (max-width: 1080px) {
   .metrics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -14,6 +14,23 @@ export type IssueComment = {
   createdAt: string;
 };
 
+export type IssueActivityType =
+  | "CREATED"
+  | "STATUS_CHANGED"
+  | "PRIORITY_CHANGED"
+  | "ASSIGNEE_CHANGED"
+  | "TYPE_CHANGED"
+  | "CONTENT_UPDATED"
+  | "COMMENT_ADDED";
+
+export type IssueActivity = {
+  id: string;
+  type: IssueActivityType;
+  description: string;
+  actor: string;
+  createdAt: string;
+};
+
 export type Issue = {
   id: string;
   title: string;
@@ -24,6 +41,7 @@ export type Issue = {
   assignee: string;
   createdAt: string;
   comments?: IssueComment[];
+  activity?: IssueActivity[];
 };
 
 export const DEMO_ISSUES: Issue[] = [

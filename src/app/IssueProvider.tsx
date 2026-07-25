@@ -9,7 +9,12 @@ import {
 } from "react";
 import {
   DEMO_ISSUES,
+  KIND_LABELS,
+  PRIORITY_LABELS,
+  STATUS_LABELS,
   type Issue,
+  type IssueActivity,
+  type IssueActivityType,
   type IssueComment,
   type IssueKind,
   type IssuePriority,
@@ -41,6 +46,7 @@ type IssueContextValue = {
 };
 
 const STORAGE_KEY = "amr-hub-issues-v1";
+const CURRENT_USER = "Amanuel R.";
 const IssueContext = createContext<IssueContextValue | null>(null);
 const listeners = new Set<() => void>();
 let clientIssues: Issue[] | undefined;
@@ -72,6 +78,93 @@ function saveIssues(issues: Issue[]) {
   listeners.forEach((listener) => listener());
 }
 
+function createActivity(
+  type: IssueActivityType,
+  description: string,
+): IssueActivity {
+  const createdAt = new Date().toISOString();
+
+  return {
+    id: `activity-${createdAt}-${Math.random().toString(36).slice(2, 8)}`,
+    type,
+    description,
+    actor: CURRENT_USER,
+    createdAt,
+  };
+}
+
+function updateStoredIssue(id: string, updates: IssueUpdates) {
+  saveIssues(
+    getClientIssues().map((issue) => {
+      if (issue.id !== id) return issue;
+
+      const events: IssueActivity[] = [];
+
+      if (updates.status && updates.status !== issue.status) {
+        events.push(
+          createActivity(
+            "STATUS_CHANGED",
+            `changed status from ${STATUS_LABELS[issue.status]} to ${
+              STATUS_LABELS[updates.status]
+            }`,
+          ),
+        );
+      }
+
+      if (updates.priority && updates.priority !== issue.priority) {
+        events.push(
+          createActivity(
+            "PRIORITY_CHANGED",
+            `changed priority from ${PRIORITY_LABELS[issue.priority]} to ${
+              PRIORITY_LABELS[updates.priority]
+            }`,
+          ),
+        );
+      }
+
+      if (updates.assignee && updates.assignee !== issue.assignee) {
+        events.push(
+          createActivity(
+            "ASSIGNEE_CHANGED",
+            updates.assignee === "Unassigned"
+              ? "removed the assignee"
+              : `assigned the issue to ${updates.assignee}`,
+          ),
+        );
+      }
+
+      if (updates.kind && updates.kind !== issue.kind) {
+        events.push(
+          createActivity(
+            "TYPE_CHANGED",
+            `changed type from ${KIND_LABELS[issue.kind]} to ${
+              KIND_LABELS[updates.kind]
+            }`,
+          ),
+        );
+      }
+
+      const changedTitle =
+        updates.title !== undefined && updates.title !== issue.title;
+      const changedDescription =
+        updates.description !== undefined &&
+        updates.description !== issue.description;
+
+      if (changedTitle || changedDescription) {
+        events.push(createActivity("CONTENT_UPDATED", "updated issue details"));
+      }
+
+      if (events.length === 0) return issue;
+
+      return {
+        ...issue,
+        ...updates,
+        activity: [...(issue.activity ?? []), ...events],
+      };
+    }),
+  );
+}
+
 export function IssueProvider({ children }: { children: React.ReactNode }) {
   const issues = useSyncExternalStore(
     subscribe,
@@ -101,33 +194,33 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateStatus = useCallback((id: string, status: IssueStatus) => {
-    saveIssues(
-      getClientIssues().map((issue) =>
-        issue.id === id ? { ...issue, status } : issue,
-      ),
-    );
+    updateStoredIssue(id, { status });
   }, []);
 
   const updateIssue = useCallback((id: string, updates: IssueUpdates) => {
-    saveIssues(
-      getClientIssues().map((issue) =>
-        issue.id === id ? { ...issue, ...updates } : issue,
-      ),
-    );
+    updateStoredIssue(id, updates);
   }, []);
 
   const addComment = useCallback((issueId: string, body: string) => {
     const comment: IssueComment = {
       id: `comment-${Date.now()}`,
       body: body.trim(),
-      author: "Amanuel R.",
+      author: CURRENT_USER,
       createdAt: new Date().toISOString(),
     };
+    const activity = createActivity(
+      "COMMENT_ADDED",
+      "commented on the issue",
+    );
 
     saveIssues(
       getClientIssues().map((issue) =>
         issue.id === issueId
-          ? { ...issue, comments: [...(issue.comments ?? []), comment] }
+          ? {
+              ...issue,
+              comments: [...(issue.comments ?? []), comment],
+              activity: [...(issue.activity ?? []), activity],
+            }
           : issue,
       ),
     );
