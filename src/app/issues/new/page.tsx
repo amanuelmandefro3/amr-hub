@@ -9,9 +9,13 @@ import { IssueLabelChip } from "../../components/IssueLabelChip";
 import {
   KIND_LABELS,
   PRIORITY_LABELS,
+  type IssueEstimate,
   type IssueKind,
   type IssuePriority,
 } from "../../data/issues";
+import { findPlanningCycle, formatCycleDateRange } from "../../data/cycles";
+
+const ESTIMATES: IssueEstimate[] = [1, 2, 3, 5, 8];
 
 type FormErrors = {
   title?: string;
@@ -20,17 +24,21 @@ type FormErrors = {
 
 export default function NewIssuePage() {
   const router = useRouter();
-  const { createIssue, labels } = useIssues();
+  const { createIssue, labels, cycles } = useIssues();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<IssuePriority>("MEDIUM");
   const [kind, setKind] = useState<IssueKind>("BUG");
   const [assignee, setAssignee] = useState("Unassigned");
   const [dueDate, setDueDate] = useState("");
+  const [cycleId, setCycleId] = useState<string | null>(null);
+  const [estimate, setEstimate] = useState<IssueEstimate | null>(3);
   const [labelIds, setLabelIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const selectedCycleId = cycleId ?? findPlanningCycle(cycles)?.id ?? "";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -60,6 +68,8 @@ export default function NewIssuePage() {
         kind,
         assignee,
         dueDate: dueDate || null,
+        cycleId: selectedCycleId || null,
+        estimate,
         labelIds,
       });
       router.push(`/issues/${issue.id}`);
@@ -210,6 +220,40 @@ export default function NewIssuePage() {
                   value={dueDate}
                   onChange={(event) => setDueDate(event.target.value)}
                 />
+              </label>
+              <label className="form-field">
+                <span>Cycle</span>
+                <select
+                  value={selectedCycleId}
+                  onChange={(event) => setCycleId(event.target.value)}
+                >
+                  <option value="">No cycle</option>
+                  {cycles.map((cycle) => (
+                    <option value={cycle.id} key={cycle.id}>
+                      {cycle.name} - {formatCycleDateRange(cycle)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-field">
+                <span>Estimate</span>
+                <select
+                  value={estimate ?? ""}
+                  onChange={(event) =>
+                    setEstimate(
+                      event.target.value
+                        ? (Number(event.target.value) as IssueEstimate)
+                        : null,
+                    )
+                  }
+                >
+                  <option value="">No estimate</option>
+                  {ESTIMATES.map((value) => (
+                    <option value={value} key={value}>
+                      {value} {value === 1 ? "point" : "points"}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
 

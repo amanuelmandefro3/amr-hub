@@ -6,6 +6,7 @@ export type IssuePriority =
   | "HIGH"
   | "URGENT";
 export type IssueKind = "BUG" | "FEATURE" | "TASK";
+export type IssueEstimate = 1 | 2 | 3 | 5 | 8;
 
 export type IssueComment = {
   id: string;
@@ -23,7 +24,9 @@ export type IssueActivityType =
   | "CONTENT_UPDATED"
   | "COMMENT_ADDED"
   | "DUE_DATE_CHANGED"
-  | "LABELS_CHANGED";
+  | "LABELS_CHANGED"
+  | "CYCLE_CHANGED"
+  | "ESTIMATE_CHANGED";
 
 export type IssueActivity = {
   id: string;
@@ -57,6 +60,14 @@ export type SavedView = {
 
 export type SavedViewInput = Omit<SavedView, "id" | "owner">;
 
+export type Cycle = {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+};
+
 export type Issue = {
   id: string;
   title: string;
@@ -66,6 +77,8 @@ export type Issue = {
   kind: IssueKind;
   assignee: string;
   dueDate: string | null;
+  estimate: IssueEstimate | null;
+  cycleId: string | null;
   labels: WorkspaceLabel[];
   createdAt: string;
   comments?: IssueComment[];
@@ -74,7 +87,13 @@ export type Issue = {
 
 export type NewIssueInput = Pick<
   Issue,
-  "title" | "description" | "priority" | "kind" | "assignee"
+  | "title"
+  | "description"
+  | "priority"
+  | "kind"
+  | "assignee"
+  | "estimate"
+  | "cycleId"
 > & {
   dueDate: string | null;
   labelIds: string[];
@@ -90,6 +109,8 @@ export type IssueUpdates = Partial<
     | "kind"
     | "assignee"
     | "dueDate"
+    | "estimate"
+    | "cycleId"
   >
 > & {
   labelIds?: string[];
@@ -114,6 +135,8 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "BUG",
     assignee: "Amanuel R.",
     dueDate: "2026-07-27T12:00:00.000Z",
+    estimate: 5,
+    cycleId: "cycle-30",
     labels: [WORKSPACE_LABELS[0], WORKSPACE_LABELS[2]],
     createdAt: "2026-07-25T07:20:00.000Z",
     comments: [
@@ -141,6 +164,8 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "FEATURE",
     assignee: "Maya Chen",
     dueDate: "2026-07-30T12:00:00.000Z",
+    estimate: 3,
+    cycleId: "cycle-30",
     labels: [WORKSPACE_LABELS[1]],
     createdAt: "2026-07-24T13:40:00.000Z",
   },
@@ -154,6 +179,8 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "TASK",
     assignee: "Jon Bell",
     dueDate: null,
+    estimate: 2,
+    cycleId: "cycle-30",
     labels: [],
     createdAt: "2026-07-24T08:10:00.000Z",
   },
@@ -167,6 +194,8 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "BUG",
     assignee: "Amanuel R.",
     dueDate: "2026-07-28T12:00:00.000Z",
+    estimate: 3,
+    cycleId: "cycle-30",
     labels: [WORKSPACE_LABELS[1], WORKSPACE_LABELS[3]],
     createdAt: "2026-07-23T15:25:00.000Z",
     comments: [
@@ -188,6 +217,8 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "TASK",
     assignee: "Unassigned",
     dueDate: "2026-08-03T12:00:00.000Z",
+    estimate: 2,
+    cycleId: "cycle-31",
     labels: [WORKSPACE_LABELS[0]],
     createdAt: "2026-07-22T12:15:00.000Z",
   },
@@ -201,6 +232,8 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "FEATURE",
     assignee: "Maya Chen",
     dueDate: null,
+    estimate: 5,
+    cycleId: "cycle-31",
     labels: [WORKSPACE_LABELS[2]],
     createdAt: "2026-07-21T16:50:00.000Z",
   },
@@ -214,6 +247,8 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "BUG",
     assignee: "Jon Bell",
     dueDate: null,
+    estimate: 3,
+    cycleId: "cycle-30",
     labels: [WORKSPACE_LABELS[1]],
     createdAt: "2026-07-20T10:30:00.000Z",
   },
@@ -227,6 +262,8 @@ export const DEMO_ISSUES: Issue[] = [
     kind: "TASK",
     assignee: "Unassigned",
     dueDate: null,
+    estimate: 1,
+    cycleId: "cycle-30",
     labels: [WORKSPACE_LABELS[4]],
     createdAt: "2026-07-19T09:05:00.000Z",
   },

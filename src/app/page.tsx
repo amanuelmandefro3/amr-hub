@@ -13,19 +13,65 @@ import {
 import { useIssues } from "./IssueProvider";
 import { IssueVisualRow } from "./components/IssueVisualRow";
 import { WorkspaceLoading } from "./components/WorkspaceLoading";
+import {
+  findCurrentCycle,
+  formatCycleDateRange,
+  getCycleMetrics,
+} from "./data/cycles";
+import type { Issue } from "./data/issues";
 
-const throughput = [
-  { day: "Mon", opened: 3, closed: 2 },
-  { day: "Tue", opened: 5, closed: 3 },
-  { day: "Wed", opened: 4, closed: 5 },
-  { day: "Thu", opened: 7, closed: 4 },
-  { day: "Fri", opened: 5, closed: 6 },
-  { day: "Sat", opened: 2, closed: 3 },
-  { day: "Sun", opened: 4, closed: 5 },
-];
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+function dateKey(value: Date | string) {
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+function buildThroughput(issues: Issue[], now: Date) {
+  const today = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
+  const points = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today - (6 - index) * DAY_IN_MS);
+    return {
+      key: dateKey(date),
+      day: new Intl.DateTimeFormat("en", {
+        weekday: "short",
+        timeZone: "UTC",
+      }).format(date),
+      opened: 0,
+      closed: 0,
+    };
+  });
+  const byDate = new Map(points.map((point) => [point.key, point]));
+
+  for (const issue of issues) {
+    const openedPoint = byDate.get(dateKey(issue.createdAt));
+    if (openedPoint) openedPoint.opened += 1;
+
+    const completionEvents = (issue.activity ?? []).filter(
+      (event) =>
+        event.type === "STATUS_CHANGED" &&
+        event.description.toLowerCase().endsWith("to done"),
+    );
+
+    if (completionEvents.length > 0) {
+      for (const event of completionEvents) {
+        const closedPoint = byDate.get(dateKey(event.createdAt));
+        if (closedPoint) closedPoint.closed += 1;
+      }
+    } else if (issue.status === "DONE") {
+      const closedPoint = byDate.get(dateKey(issue.createdAt));
+      if (closedPoint) closedPoint.closed += 1;
+    }
+  }
+
+  return points;
+}
 
 export default function Home() {
-  const { issues, isLoading } = useIssues();
+  const { issues, cycles, isLoading } = useIssues();
 
   if (isLoading) {
     return <WorkspaceLoading label="overview" />;
@@ -40,6 +86,28 @@ export default function Home() {
     (issue) => issue.priority === "URGENT" && issue.status !== "DONE",
   ).length;
   const completionRate = Math.round((completed / Math.max(issues.length, 1)) * 100);
+  const now = new Date();
+  const throughput = buildThroughput(issues, now);
+  const largestThroughput = Math.max(
+    1,
+    ...throughput.flatMap((point) => [point.opened, point.closed]),
+  );
+  const addedThisWeek = throughput.reduce(
+    (total, point) => total + point.opened,
+    0,
+  );
+  const activeOwners = new Set(
+    issues
+      .filter(
+        (issue) =>
+          issue.status !== "DONE" && issue.assignee !== "Unassigned",
+      )
+      .map((issue) => issue.assignee),
+  ).size;
+  const currentCycle = findCurrentCycle(cycles, now);
+  const cycleMetrics = currentCycle
+    ? getCycleMetrics(currentCycle, issues, now)
+    : null;
 
   const priorityCounts = [
     {
@@ -92,7 +160,7 @@ export default function Home() {
           <strong className="metric-value">{active}</strong>
           <span className="metric-note">
             <TrendingUp size={14} aria-hidden="true" />
-            3 added this week
+            {addedThisWeek} added this week
           </span>
         </article>
         <article className="metric-card">
@@ -101,7 +169,9 @@ export default function Home() {
           </span>
           <span className="metric-label">In progress</span>
           <strong className="metric-value">{inProgress}</strong>
-          <span className="metric-note neutral">Across 2 owners</span>
+          <span className="metric-note neutral">
+            Across {activeOwners} {activeOwners === 1 ? "owner" : "owners"}
+          </span>
         </article>
         <article className="metric-card">
           <span className="metric-icon metric-icon-green">
@@ -109,7 +179,9 @@ export default function Home() {
           </span>
           <span className="metric-label">Completion rate</span>
           <strong className="metric-value">{completionRate}%</strong>
-          <span className="metric-note positive">+8% from last week</span>
+          <span className="metric-note positive">
+            {completed} of {issues.length} issues
+          </span>
         </article>
         <article className="metric-card">
           <span className="metric-icon metric-icon-red">
@@ -139,12 +211,22 @@ export default function Home() {
                 <div className="bars">
                   <span
                     className="bar bar-opened"
-                    style={{ height: `${point.opened * 12}px` }}
+                    style={{
+                      height: `${Math.max(
+                        4,
+                        (point.opened / largestThroughput) * 84,
+                      )}px`,
+                    }}
                     title={`${point.opened} opened`}
                   />
                   <span
                     className="bar bar-closed"
-                    style={{ height: `${point.closed * 12}px` }}
+                    style={{
+                      height: `${Math.max(
+                        4,
+                        (point.closed / largestThroughput) * 84,
+                      )}px`,
+                    }}
                     title={`${point.closed} completed`}
                   />
                 </div>
@@ -155,24 +237,65 @@ export default function Home() {
         </article>
 
         <article className="panel cycle-panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Current cycle</p>
-              <h2>July 22 - Aug 2</h2>
+          {currentCycle && cycleMetrics ? (
+            <>
+              <div className="panel-header">
+                <div>
+                  <p className="eyebrow">{currentCycle.name}</p>
+                  <h2>{formatCycleDateRange(currentCycle)}</h2>
+                </div>
+                <span className="cycle-day">
+                  Day {cycleMetrics.elapsedDays} of {cycleMetrics.totalDays}
+                </span>
+              </div>
+              <div
+                className="progress-ring"
+                style={
+                  {
+                    "--progress": `${cycleMetrics.completionPercent}%`,
+                  } as React.CSSProperties
+                }
+              >
+                <span>
+                  <strong>{cycleMetrics.completionPercent}%</strong>
+                  <small>complete</small>
+                </span>
+              </div>
+              <div className="cycle-stats">
+                <span>
+                  <strong>{cycleMetrics.completedPoints}</strong>
+                  <small>Completed</small>
+                </span>
+                <span>
+                  <strong>{cycleMetrics.remainingPoints}</strong>
+                  <small>Remaining</small>
+                </span>
+                <span>
+                  <strong>{cycleMetrics.atRisk}</strong>
+                  <small>At risk</small>
+                </span>
+              </div>
+              <div
+                className="linear-progress"
+                aria-label={`Cycle is ${cycleMetrics.completionPercent}% complete`}
+              >
+                <span
+                  style={{ width: `${cycleMetrics.completionPercent}%` }}
+                />
+              </div>
+              <Link className="cycle-panel-link" href="/cycles">
+                View cycle plan <ArrowRight size={14} aria-hidden="true" />
+              </Link>
+            </>
+          ) : (
+            <div className="cycle-panel-empty">
+              <Clock3 size={22} aria-hidden="true" />
+              <h2>No active cycle</h2>
+              <Link className="text-link" href="/cycles">
+                Open cycle planning
+              </Link>
             </div>
-            <span className="cycle-day">Day 4 of 10</span>
-          </div>
-          <div className="progress-ring" style={{ "--progress": "68%" } as React.CSSProperties}>
-            <span><strong>68%</strong><small>complete</small></span>
-          </div>
-          <div className="cycle-stats">
-            <span><strong>17</strong><small>Completed</small></span>
-            <span><strong>8</strong><small>Remaining</small></span>
-            <span><strong>3</strong><small>At risk</small></span>
-          </div>
-          <div className="linear-progress" aria-label="Cycle is 68% complete">
-            <span style={{ width: "68%" }} />
-          </div>
+          )}
         </article>
       </section>
 

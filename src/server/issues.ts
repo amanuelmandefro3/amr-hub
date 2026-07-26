@@ -30,6 +30,7 @@ const issueInclude = {
     include: { label: true },
     orderBy: { label: { name: "asc" } },
   },
+  cycle: true,
 } satisfies Prisma.IssueInclude;
 
 type StoredIssue = Prisma.IssueGetPayload<{
@@ -46,6 +47,8 @@ function serializeIssue(issue: StoredIssue): Issue {
     kind: issue.kind as IssueKind,
     assignee: issue.assignee,
     dueDate: issue.dueDate?.toISOString() ?? null,
+    estimate: issue.estimate as Issue["estimate"],
+    cycleId: issue.cycleId,
     labels: issue.labels.map(({ label }) => ({
       id: label.id,
       name: label.name,
@@ -91,6 +94,8 @@ async function ensureDemoWorkspace() {
             kind: issue.kind,
             assignee: issue.assignee,
             dueDate: issue.dueDate ? new Date(issue.dueDate) : null,
+            estimate: issue.estimate,
+            cycleId: issue.cycleId,
             createdAt: new Date(issue.createdAt),
             labels: {
               create: issue.labels.map((label) => ({
@@ -173,6 +178,7 @@ export async function listIssues() {
 export async function createIssue(input: NewIssueInput) {
   await ensureWorkspaceLabels();
   await validateLabelIds(input.labelIds);
+  await validateCycleId(input.cycleId);
 
   const issue = await prisma.$transaction(async (transaction) => {
     const latestIssue = await transaction.issue.findFirst({
@@ -239,9 +245,32 @@ export class UnknownLabelError extends Error {
   }
 }
 
+async function validateCycleId(cycleId: string | null | undefined) {
+  if (!cycleId) return null;
+
+  const cycle = await prisma.cycle.findUnique({
+    where: { id: cycleId },
+    select: { name: true },
+  });
+
+  if (!cycle) {
+    throw new UnknownCycleError();
+  }
+
+  return cycle.name;
+}
+
+export class UnknownCycleError extends Error {
+  constructor() {
+    super("The selected cycle does not exist");
+    this.name = "UnknownCycleError";
+  }
+}
+
 function buildActivity(
   current: StoredIssue,
   updates: IssueUpdates,
+  nextCycleName: string | null,
 ): Prisma.ActivityCreateWithoutIssueInput[] {
   const events: Omit<IssueActivity, "id" | "createdAt">[] = [];
 
@@ -326,6 +355,36 @@ function buildActivity(
     }
   }
 
+  if (
+    updates.estimate !== undefined &&
+    updates.estimate !== current.estimate
+  ) {
+    events.push({
+      type: "ESTIMATE_CHANGED",
+      description: updates.estimate
+        ? `set the estimate to ${updates.estimate} ${
+            updates.estimate === 1 ? "point" : "points"
+          }`
+        : "removed the estimate",
+      actor: CURRENT_USER,
+    });
+  }
+
+  if (
+    updates.cycleId !== undefined &&
+    updates.cycleId !== current.cycleId
+  ) {
+    events.push({
+      type: "CYCLE_CHANGED",
+      description: nextCycleName
+        ? `moved the issue to ${nextCycleName}`
+        : current.cycle
+          ? `removed the issue from ${current.cycle.name}`
+          : "removed the issue from its cycle",
+      actor: CURRENT_USER,
+    });
+  }
+
   return events;
 }
 
@@ -334,6 +393,7 @@ export async function updateIssue(id: string, updates: IssueUpdates) {
     await ensureWorkspaceLabels();
     await validateLabelIds(updates.labelIds);
   }
+  const nextCycleName = await validateCycleId(updates.cycleId);
 
   const issue = await prisma.$transaction(async (transaction) => {
     const current = await transaction.issue.findUnique({
@@ -343,7 +403,7 @@ export async function updateIssue(id: string, updates: IssueUpdates) {
 
     if (!current) return null;
 
-    const activity = buildActivity(current, updates);
+    const activity = buildActivity(current, updates, nextCycleName);
     const changed = activity.length > 0;
     if (!changed) return current;
     const { dueDate, labelIds, ...fields } = updates;

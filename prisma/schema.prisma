@@ -17,14 +17,18 @@ model Issue {
   kind        String       @default("TASK")
   assignee    String       @default("Unassigned")
   dueDate     DateTime?
+  estimate    Int?
+  cycleId     String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  cycle       Cycle?       @relation(fields: [cycleId], references: [id], onDelete: SetNull)
   comments    Comment[]
   activity    Activity[]
   labels      IssueLabel[]
 
   @@index([createdAt])
   @@index([status])
+  @@index([cycleId])
 }
 
 model Label {
@@ -85,4 +89,16 @@ model SavedView {
 
   @@index([owner])
   @@index([labelId])
+}
+
+model Cycle {
+  id        String   @id
+  name      String   @unique
+  startDate DateTime
+  endDate   DateTime
+  capacity  Int
+  createdAt DateTime @default(now())
+  issues    Issue[]
+
+  @@index([startDate, endDate])
 }

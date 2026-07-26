@@ -3,6 +3,7 @@ import { createIssueSchema } from "../../../server/issueSchemas";
 import {
   createIssue,
   listIssues,
+  UnknownCycleError,
   UnknownLabelError,
 } from "../../../server/issues";
 
@@ -45,7 +46,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (error instanceof UnknownLabelError) {
+    if (
+      error instanceof UnknownLabelError ||
+      error instanceof UnknownCycleError
+    ) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 

@@ -16,6 +16,8 @@ server API backed by a local SQLite database.
 - Due dates, workspace labels, label filtering, and planning activity
 - Server-backed saved views for reusable search, status, priority, ownership,
   label, and sort combinations
+- Cycle planning with capacity, Fibonacci effort estimates, scope progress, and
+  at-risk work
 - Responsive desktop and mobile navigation
 - Keyboard shortcut: press `C` outside a form field to create an issue
 - Durable server persistence across browsers and page reloads
@@ -50,7 +52,7 @@ npm audit --omit=dev
 - Tailwind/PostCSS build pipeline with a custom operational design system
 - Lucide icons
 - Zod request validation
-- Prisma and SQLite with relational issues, comments, and activity
+- Prisma and SQLite with relational issues, comments, activity, and cycles
 - Relational workspace labels and indexed issue planning metadata
 - REST endpoints for issue loading, creation, editing, discussion, labels, and
   saved views
@@ -62,7 +64,7 @@ The next production milestones build on the durable server data:
 
 1. Authentication, organizations, and membership roles
 2. Attachments, custom fields, and richer planning metadata
-3. Backlog triage, cycles, estimates, and capacity
+3. Backlog triage, cycle automation, workload forecasting, and dependencies
 4. Notifications plus GitHub, Slack, and error-monitoring integrations
 5. Automated API and component tests, accessibility checks, observability, rate
    limiting, backups, and deployment runbooks

@@ -9,9 +9,11 @@ import {
   Check,
   CirclePlus,
   FilePenLine,
+  Hash,
   MessageSquare,
   Pencil,
   RefreshCcw,
+  Repeat2,
   Send,
   Tag,
   UserRound,
@@ -22,14 +24,17 @@ import {
   KIND_LABELS,
   PRIORITY_LABELS,
   STATUS_LABELS,
+  type Cycle,
   type Issue,
   type IssueActivity,
+  type IssueEstimate,
   type IssueKind,
   type IssuePriority,
   type IssueStatus,
   type IssueUpdates,
   type WorkspaceLabel,
 } from "../../data/issues";
+import { formatCycleDateRange } from "../../data/cycles";
 import {
   KindIcon,
   PriorityBadge,
@@ -37,6 +42,8 @@ import {
 } from "../../components/IssueVisuals";
 import { WorkspaceLoading } from "../../components/WorkspaceLoading";
 import { IssueLabelChip } from "../../components/IssueLabelChip";
+
+const ESTIMATES: IssueEstimate[] = [1, 2, 3, 5, 8];
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -64,22 +71,22 @@ function getInitials(name: string) {
 }
 
 function ActivityIcon({ type }: { type: IssueActivity["type"] }) {
-  const Icon =
-    type === "CREATED"
-      ? CirclePlus
-      : type === "COMMENT_ADDED"
-        ? MessageSquare
-        : type === "ASSIGNEE_CHANGED"
-          ? UserRound
-          : type === "CONTENT_UPDATED"
-            ? FilePenLine
-            : type === "DUE_DATE_CHANGED"
-              ? CalendarDays
-              : type === "TYPE_CHANGED" ||
-                  type === "PRIORITY_CHANGED" ||
-                  type === "LABELS_CHANGED"
-                ? Tag
-                : RefreshCcw;
+  let Icon = RefreshCcw;
+
+  if (type === "CREATED") Icon = CirclePlus;
+  if (type === "COMMENT_ADDED") Icon = MessageSquare;
+  if (type === "ASSIGNEE_CHANGED") Icon = UserRound;
+  if (type === "CONTENT_UPDATED") Icon = FilePenLine;
+  if (type === "DUE_DATE_CHANGED") Icon = CalendarDays;
+  if (type === "CYCLE_CHANGED") Icon = Repeat2;
+  if (type === "ESTIMATE_CHANGED") Icon = Hash;
+  if (
+    type === "TYPE_CHANGED" ||
+    type === "PRIORITY_CHANGED" ||
+    type === "LABELS_CHANGED"
+  ) {
+    Icon = Tag;
+  }
 
   return (
     <span className={`activity-icon activity-${type.toLowerCase()}`}>
@@ -126,7 +133,8 @@ function IssueNotFound({ id }: { id: string }) {
 
 export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
-  const { issues, labels, isLoading, addComment, updateIssue } = useIssues();
+  const { issues, labels, cycles, isLoading, addComment, updateIssue } =
+    useIssues();
   const id = decodeURIComponent(params.id);
   const issue = issues.find((candidate) => candidate.id === id);
 
@@ -142,6 +150,7 @@ export default function IssueDetailPage() {
     <IssueDetail
       issue={issue}
       labels={labels}
+      cycles={cycles}
       onAddComment={addComment}
       onUpdateIssue={updateIssue}
     />
@@ -151,11 +160,13 @@ export default function IssueDetailPage() {
 function IssueDetail({
   issue,
   labels,
+  cycles,
   onAddComment,
   onUpdateIssue,
 }: {
   issue: Issue;
   labels: WorkspaceLabel[];
+  cycles: Cycle[];
   onAddComment: (issueId: string, body: string) => Promise<boolean>;
   onUpdateIssue: (
     issueId: string,
@@ -494,6 +505,50 @@ function IssueDetail({
                     })
                   }
                 />
+              </label>
+            </IssueProperty>
+            <IssueProperty label="Cycle">
+              <label className="editable-property">
+                <Repeat2 size={14} aria-hidden="true" />
+                <span className="sr-only">Issue cycle</span>
+                <select
+                  value={issue.cycleId ?? ""}
+                  onChange={(event) =>
+                    onUpdateIssue(issue.id, {
+                      cycleId: event.target.value || null,
+                    })
+                  }
+                >
+                  <option value="">No cycle</option>
+                  {cycles.map((cycle) => (
+                    <option value={cycle.id} key={cycle.id}>
+                      {cycle.name} - {formatCycleDateRange(cycle)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </IssueProperty>
+            <IssueProperty label="Estimate">
+              <label className="editable-property">
+                <Hash size={14} aria-hidden="true" />
+                <span className="sr-only">Issue estimate</span>
+                <select
+                  value={issue.estimate ?? ""}
+                  onChange={(event) =>
+                    onUpdateIssue(issue.id, {
+                      estimate: event.target.value
+                        ? (Number(event.target.value) as IssueEstimate)
+                        : null,
+                    })
+                  }
+                >
+                  <option value="">No estimate</option>
+                  {ESTIMATES.map((value) => (
+                    <option value={value} key={value}>
+                      {value} {value === 1 ? "point" : "points"}
+                    </option>
+                  ))}
+                </select>
               </label>
             </IssueProperty>
             <IssueProperty label="Labels">

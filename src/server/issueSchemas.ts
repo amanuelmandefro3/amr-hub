@@ -16,6 +16,15 @@ export const issuePrioritySchema = z.enum([
 ]);
 
 export const issueKindSchema = z.enum(["BUG", "FEATURE", "TASK"]);
+export const issueEstimateSchema = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(5),
+  z.literal(8),
+]);
+
+const cycleIdSchema = z.string().trim().min(1).max(80).nullable();
 
 const dueDateSchema = z
   .string()
@@ -46,6 +55,8 @@ export const createIssueSchema = z
     kind: issueKindSchema,
     assignee: z.string().trim().min(1).max(80),
     dueDate: dueDateSchema.nullable(),
+    estimate: issueEstimateSchema.nullable(),
+    cycleId: cycleIdSchema,
     labelIds: labelIdsSchema,
   })
   .strict();
@@ -59,6 +70,8 @@ export const updateIssueSchema = z
     kind: issueKindSchema.optional(),
     assignee: z.string().trim().min(1).max(80).optional(),
     dueDate: dueDateSchema.nullable().optional(),
+    estimate: issueEstimateSchema.nullable().optional(),
+    cycleId: cycleIdSchema.optional(),
     labelIds: labelIdsSchema.optional(),
   })
   .strict()

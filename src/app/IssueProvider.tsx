@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import {
+  type Cycle,
   type Issue,
   type IssueStatus,
   type IssueUpdates,
@@ -22,6 +23,7 @@ type IssueContextValue = {
   issues: Issue[];
   labels: WorkspaceLabel[];
   savedViews: SavedView[];
+  cycles: Cycle[];
   isLoading: boolean;
   createIssue: (issue: NewIssueInput) => Promise<Issue>;
   updateStatus: (id: string, status: IssueStatus) => Promise<boolean>;
@@ -69,6 +71,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [labels, setLabels] = useState<WorkspaceLabel[]>([]);
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
+  const [cycles, setCycles] = useState<Cycle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,14 +80,17 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      const [loadedIssues, loadedLabels, loadedViews] = await Promise.all([
-        apiRequest<Issue[]>("/api/issues"),
-        apiRequest<WorkspaceLabel[]>("/api/labels"),
-        apiRequest<SavedView[]>("/api/views"),
-      ]);
+      const [loadedIssues, loadedLabels, loadedViews, loadedCycles] =
+        await Promise.all([
+          apiRequest<Issue[]>("/api/issues"),
+          apiRequest<WorkspaceLabel[]>("/api/labels"),
+          apiRequest<SavedView[]>("/api/views"),
+          apiRequest<Cycle[]>("/api/cycles"),
+        ]);
       setIssues(loadedIssues);
       setLabels(loadedLabels);
       setSavedViews(loadedViews);
+      setCycles(loadedCycles);
     } catch (requestError) {
       setError(messageFrom(requestError, "Issues could not be loaded"));
     } finally {
@@ -103,11 +109,15 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
       apiRequest<SavedView[]>("/api/views", {
         signal: controller.signal,
       }),
+      apiRequest<Cycle[]>("/api/cycles", {
+        signal: controller.signal,
+      }),
     ])
-      .then(([loadedIssues, loadedLabels, loadedViews]) => {
+      .then(([loadedIssues, loadedLabels, loadedViews, loadedCycles]) => {
         setIssues(loadedIssues);
         setLabels(loadedLabels);
         setSavedViews(loadedViews);
+        setCycles(loadedCycles);
         setError(null);
       })
       .catch((requestError) => {
@@ -238,6 +248,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
       issues,
       labels,
       savedViews,
+      cycles,
       isLoading,
       createIssue,
       updateStatus,
@@ -251,6 +262,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
       issues,
       labels,
       savedViews,
+      cycles,
       isLoading,
       createIssue,
       updateStatus,

@@ -662,6 +662,31 @@ h2 {
   background: var(--green-500);
 }
 
+.cycle-panel-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 5px;
+  margin-top: 12px;
+  color: var(--green-600);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.cycle-panel-empty {
+  display: flex;
+  min-height: 230px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--gray-400);
+}
+
+.cycle-panel-empty h2 {
+  color: var(--gray-800);
+}
+
 .text-link {
   display: inline-flex;
   align-items: center;
@@ -1765,6 +1790,11 @@ h2 {
   gap: 7px;
 }
 
+.editable-property > svg {
+  flex: 0 0 auto;
+  color: var(--gray-400);
+}
+
 .editable-property select {
   width: 100%;
   min-width: 0;
@@ -2027,6 +2057,16 @@ h2 {
   background: var(--blue-50);
 }
 
+.activity-cycle_changed {
+  color: var(--green-600);
+  background: var(--green-50);
+}
+
+.activity-estimate_changed {
+  color: var(--amber-600);
+  background: var(--amber-50);
+}
+
 .activity-item > div:last-child {
   padding-top: 2px;
 }
@@ -2046,6 +2086,273 @@ h2 {
 .activity-item time {
   color: var(--gray-400);
   font-size: 9px;
+}
+
+/* Cycle planning */
+.cycles-page {
+  width: min(100%, 1280px);
+}
+
+.cycle-focus {
+  margin-bottom: 16px;
+  padding: 22px;
+  border: 1px solid var(--gray-800);
+  border-radius: var(--radius);
+  color: #fff;
+  background: var(--gray-900);
+}
+
+.cycle-focus-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cycle-focus-heading h2 {
+  margin: 9px 0 3px;
+  color: #fff;
+  font-size: 20px;
+}
+
+.cycle-focus-heading p {
+  margin: 0;
+  color: var(--gray-400);
+  font-size: 11px;
+}
+
+.cycle-phase {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 4px;
+  color: var(--gray-600);
+  background: var(--gray-100);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cycle-phase.current {
+  color: var(--green-600);
+  background: var(--green-50);
+}
+
+.cycle-phase.upcoming {
+  color: var(--blue-600);
+  background: var(--blue-50);
+}
+
+.cycle-focus-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 24px 0 20px;
+}
+
+.cycle-focus-metrics > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--gray-700);
+  border-radius: 6px;
+  background: var(--gray-800);
+}
+
+.cycle-focus-metrics svg {
+  flex: 0 0 auto;
+  color: var(--green-500);
+}
+
+.cycle-focus-metrics span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.cycle-focus-metrics strong {
+  font-size: 16px;
+}
+
+.cycle-focus-metrics small {
+  overflow: hidden;
+  color: var(--gray-400);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capacity-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--gray-100);
+}
+
+.cycle-focus .capacity-track {
+  background: var(--gray-700);
+}
+
+.capacity-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green-500);
+}
+
+.capacity-track > span.over-capacity {
+  background: var(--red-500);
+}
+
+.capacity-note {
+  margin: 7px 0 0;
+  color: var(--gray-400);
+  font-size: 9px;
+}
+
+.cycle-scope-panel {
+  margin-bottom: 28px;
+}
+
+.cycle-scope-list {
+  margin: 14px -18px -18px;
+}
+
+.cycle-scope-row {
+  display: grid;
+  min-height: 56px;
+  grid-template-columns: minmax(220px, 1fr) 110px 105px 55px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.cycle-scope-row:hover {
+  background: var(--gray-25);
+}
+
+.cycle-scope-row > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cycle-scope-row > div:first-child a {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 610;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cycle-scope-row > div:first-child span {
+  color: var(--gray-400);
+  font-size: 9px;
+}
+
+.estimate-chip {
+  color: var(--gray-500);
+  font-size: 10px;
+  font-weight: 650;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cycle-history {
+  margin-top: 8px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 13px;
+}
+
+.section-heading p {
+  margin: 3px 0 0;
+  color: var(--gray-500);
+  font-size: 11px;
+}
+
+.cycle-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cycle-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.cycle-card header,
+.cycle-card footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cycle-card header > span:last-child,
+.cycle-card footer {
+  color: var(--gray-500);
+  font-size: 9px;
+}
+
+.cycle-card h3 {
+  margin: 15px 0 10px;
+  font-size: 14px;
+}
+
+.cycle-card-total {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-bottom: 11px;
+}
+
+.cycle-card-total strong {
+  font-size: 22px;
+}
+
+.cycle-card-total span {
+  color: var(--gray-500);
+  font-size: 10px;
+}
+
+.cycle-card footer {
+  margin-top: 10px;
+}
+
+.cycle-empty {
+  display: flex;
+  min-height: 260px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-400);
+  text-align: center;
+}
+
+.cycle-empty h2 {
+  margin: 10px 0 4px;
+  color: var(--gray-800);
+}
+
+.cycle-empty p {
+  margin: 0;
+  color: var(--gray-500);
+  font-size: 11px;
 }
 
 .workspace-loading {
@@ -2126,6 +2433,10 @@ h2 {
 
   .cycle-panel {
     min-height: 280px;
+  }
+
+  .cycle-focus-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .issue-toolbar {
@@ -2250,6 +2561,10 @@ h2 {
   .properties-panel {
     order: -1;
   }
+
+  .cycle-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 560px) {
@@ -2329,6 +2644,37 @@ h2 {
 
   .priority-row {
     grid-template-columns: 78px minmax(60px, 1fr) 16px;
+  }
+
+  .cycle-focus {
+    padding: 17px;
+  }
+
+  .cycle-focus-metrics {
+    gap: 7px;
+    margin: 18px 0;
+  }
+
+  .cycle-focus-metrics > div {
+    padding: 10px;
+  }
+
+  .cycle-scope-panel {
+    overflow: hidden;
+  }
+
+  .cycle-scope-row {
+    grid-template-columns: minmax(150px, 1fr) 88px 45px;
+    padding-right: 15px;
+    padding-left: 15px;
+  }
+
+  .cycle-scope-row > .priority-badge {
+    display: none;
+  }
+
+  .cycle-card-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .select-button {

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  CalendarRange,
   LayoutDashboard,
   ListTodo,
   Plus,
@@ -12,6 +13,7 @@ import {
 const links = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
   { label: "Issues", href: "/issues", icon: ListTodo },
+  { label: "Cycles", href: "/cycles", icon: CalendarRange },
 ];
 
 export default function NavBar() {
