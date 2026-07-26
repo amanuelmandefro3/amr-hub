@@ -1,13 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowDownUp,
+  Bookmark,
+  BookmarkPlus,
   ListFilter,
   Plus,
   Search,
   Tag,
+  Trash2,
+  UserRound,
+  X,
 } from "lucide-react";
 import { useIssues } from "../IssueProvider";
 import {
@@ -28,6 +33,8 @@ const statusFilters: { label: string; value: StatusFilter }[] = [
   { label: "Backlog", value: "BACKLOG" },
   { label: "Completed", value: "DONE" },
 ];
+
+const assignees = ["Amanuel R.", "Maya Chen", "Jon Bell", "Unassigned"];
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -60,7 +67,15 @@ function initials(name: string) {
 }
 
 export default function IssuesPage() {
-  const { issues, labels, isLoading, updateStatus } = useIssues();
+  const {
+    issues,
+    labels,
+    savedViews,
+    isLoading,
+    updateStatus,
+    createSavedView,
+    deleteSavedView,
+  } = useIssues();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<IssuePriority | "ALL">(
@@ -68,6 +83,12 @@ export default function IssuesPage() {
   );
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
   const [labelFilter, setLabelFilter] = useState("ALL");
+  const [assigneeFilter, setAssigneeFilter] = useState("ALL");
+  const [selectedViewId, setSelectedViewId] = useState("");
+  const [isSaveViewOpen, setIsSaveViewOpen] = useState(false);
+  const [viewName, setViewName] = useState("");
+  const [viewError, setViewError] = useState<string | null>(null);
+  const [isSavingView, setIsSavingView] = useState(false);
 
   const visibleIssues = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -91,9 +112,15 @@ export default function IssuesPage() {
         const matchesLabel =
           labelFilter === "ALL" ||
           issue.labels.some((label) => label.id === labelFilter);
+        const matchesAssignee =
+          assigneeFilter === "ALL" || issue.assignee === assigneeFilter;
 
         return (
-          matchesQuery && matchesStatus && matchesPriority && matchesLabel
+          matchesQuery &&
+          matchesStatus &&
+          matchesPriority &&
+          matchesLabel &&
+          matchesAssignee
         );
       })
       .sort((left, right) => {
@@ -103,12 +130,65 @@ export default function IssuesPage() {
       });
   }, [
     issues,
+    assigneeFilter,
     labelFilter,
     priorityFilter,
     query,
     sortNewestFirst,
     statusFilter,
   ]);
+
+  const markViewModified = () => setSelectedViewId("");
+
+  const applySavedView = (id: string) => {
+    const view = savedViews.find((candidate) => candidate.id === id);
+    setSelectedViewId(id);
+    if (!view) return;
+
+    setQuery(view.query);
+    setStatusFilter(view.status);
+    setPriorityFilter(view.priority);
+    setAssigneeFilter(view.assignee);
+    setLabelFilter(view.labelId ?? "ALL");
+    setSortNewestFirst(view.sort === "NEWEST");
+  };
+
+  const handleSaveView = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = viewName.trim();
+    if (name.length < 2) return;
+
+    setIsSavingView(true);
+    setViewError(null);
+
+    try {
+      const view = await createSavedView({
+        name,
+        query: query.trim(),
+        status: statusFilter,
+        priority: priorityFilter,
+        assignee: assigneeFilter,
+        sort: sortNewestFirst ? "NEWEST" : "OLDEST",
+        labelId: labelFilter === "ALL" ? null : labelFilter,
+      });
+      setSelectedViewId(view.id);
+      setViewName("");
+      setIsSaveViewOpen(false);
+    } catch (error) {
+      setViewError(
+        error instanceof Error
+          ? error.message
+          : "Saved view could not be created",
+      );
+    } finally {
+      setIsSavingView(false);
+    }
+  };
+
+  const handleDeleteView = async () => {
+    if (!selectedViewId) return;
+    if (await deleteSavedView(selectedViewId)) setSelectedViewId("");
+  };
 
   if (isLoading) {
     return <WorkspaceLoading label="issues" />;
@@ -130,6 +210,46 @@ export default function IssuesPage() {
         </Link>
       </header>
 
+      <div className="saved-views-bar">
+        <label>
+          <Bookmark size={15} aria-hidden="true" />
+          <span className="sr-only">Open a saved view</span>
+          <select
+            value={selectedViewId}
+            onChange={(event) => applySavedView(event.target.value)}
+          >
+            <option value="">Current filters</option>
+            {savedViews.map((view) => (
+              <option value={view.id} key={view.id}>
+                {view.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => {
+            setViewError(null);
+            setIsSaveViewOpen(true);
+          }}
+        >
+          <BookmarkPlus size={15} aria-hidden="true" />
+          Save view
+        </button>
+        {selectedViewId && (
+          <button
+            className="icon-button danger"
+            type="button"
+            onClick={() => void handleDeleteView()}
+            aria-label="Delete selected saved view"
+            title="Delete saved view"
+          >
+            <Trash2 size={15} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
       <div className="issue-toolbar">
         <div className="filter-tabs" role="tablist" aria-label="Issue status">
           {statusFilters.map((filter) => (
@@ -138,7 +258,10 @@ export default function IssuesPage() {
               role="tab"
               aria-selected={statusFilter === filter.value}
               className={statusFilter === filter.value ? "active" : ""}
-              onClick={() => setStatusFilter(filter.value)}
+              onClick={() => {
+                setStatusFilter(filter.value);
+                markViewModified();
+              }}
               key={filter.value}
             >
               {filter.label}
@@ -153,7 +276,10 @@ export default function IssuesPage() {
             <input
               type="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                markViewModified();
+              }}
               placeholder="Search issues..."
             />
           </label>
@@ -162,9 +288,12 @@ export default function IssuesPage() {
             <span className="sr-only">Filter by priority</span>
             <select
               value={priorityFilter}
-              onChange={(event) =>
-                setPriorityFilter(event.target.value as IssuePriority | "ALL")
-              }
+              onChange={(event) => {
+                setPriorityFilter(
+                  event.target.value as IssuePriority | "ALL",
+                );
+                markViewModified();
+              }}
             >
               <option value="ALL">All priorities</option>
               {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
@@ -179,12 +308,33 @@ export default function IssuesPage() {
             <span className="sr-only">Filter by label</span>
             <select
               value={labelFilter}
-              onChange={(event) => setLabelFilter(event.target.value)}
+              onChange={(event) => {
+                setLabelFilter(event.target.value);
+                markViewModified();
+              }}
             >
               <option value="ALL">All labels</option>
               {labels.map((label) => (
                 <option value={label.id} key={label.id}>
                   {label.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="select-button">
+            <UserRound size={16} aria-hidden="true" />
+            <span className="sr-only">Filter by assignee</span>
+            <select
+              value={assigneeFilter}
+              onChange={(event) => {
+                setAssigneeFilter(event.target.value);
+                markViewModified();
+              }}
+            >
+              <option value="ALL">All assignees</option>
+              {assignees.map((assignee) => (
+                <option value={assignee} key={assignee}>
+                  {assignee}
                 </option>
               ))}
             </select>
@@ -197,7 +347,10 @@ export default function IssuesPage() {
           <span>{visibleIssues.length} issues</span>
           <button
             type="button"
-            onClick={() => setSortNewestFirst((current) => !current)}
+            onClick={() => {
+              setSortNewestFirst((current) => !current);
+              markViewModified();
+            }}
             aria-label={
               sortNewestFirst
                 ? "Sort by oldest issues first"
@@ -280,6 +433,8 @@ export default function IssuesPage() {
                 setStatusFilter("ALL");
                 setPriorityFilter("ALL");
                 setLabelFilter("ALL");
+                setAssigneeFilter("ALL");
+                setSelectedViewId("");
               }}
             >
               Clear filters
@@ -287,6 +442,77 @@ export default function IssuesPage() {
           </div>
         )}
       </section>
+
+      {isSaveViewOpen && (
+        <div
+          className="dialog-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setIsSaveViewOpen(false);
+            }
+          }}
+        >
+          <section
+            className="save-view-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="save-view-title"
+          >
+            <header>
+              <div>
+                <h2 id="save-view-title">Save current view</h2>
+                <p>Reuse this filter combination across the workspace.</p>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => setIsSaveViewOpen(false)}
+                aria-label="Close save view dialog"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </header>
+            <form onSubmit={handleSaveView}>
+              <label className="form-field">
+                <span>View name</span>
+                <input
+                  value={viewName}
+                  onChange={(event) => {
+                    setViewName(event.target.value);
+                    setViewError(null);
+                  }}
+                  maxLength={50}
+                  placeholder="e.g. Support triage"
+                  autoFocus
+                />
+              </label>
+              {viewError && (
+                <p className="form-submit-error" role="alert">
+                  {viewError}
+                </p>
+              )}
+              <footer>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => setIsSaveViewOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={viewName.trim().length < 2 || isSavingView}
+                >
+                  <BookmarkPlus size={15} aria-hidden="true" />
+                  {isSavingView ? "Saving..." : "Save view"}
+                </button>
+              </footer>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

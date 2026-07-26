@@ -13,17 +13,22 @@ import {
   type IssueStatus,
   type IssueUpdates,
   type NewIssueInput,
+  type SavedView,
+  type SavedViewInput,
   type WorkspaceLabel,
 } from "./data/issues";
 
 type IssueContextValue = {
   issues: Issue[];
   labels: WorkspaceLabel[];
+  savedViews: SavedView[];
   isLoading: boolean;
   createIssue: (issue: NewIssueInput) => Promise<Issue>;
   updateStatus: (id: string, status: IssueStatus) => Promise<boolean>;
   updateIssue: (id: string, updates: IssueUpdates) => Promise<boolean>;
   addComment: (issueId: string, body: string) => Promise<boolean>;
+  createSavedView: (view: SavedViewInput) => Promise<SavedView>;
+  deleteSavedView: (id: string) => Promise<boolean>;
   refreshIssues: () => Promise<void>;
 };
 
@@ -63,6 +68,7 @@ async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
 export function IssueProvider({ children }: { children: React.ReactNode }) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [labels, setLabels] = useState<WorkspaceLabel[]>([]);
+  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,12 +77,14 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      const [loadedIssues, loadedLabels] = await Promise.all([
+      const [loadedIssues, loadedLabels, loadedViews] = await Promise.all([
         apiRequest<Issue[]>("/api/issues"),
         apiRequest<WorkspaceLabel[]>("/api/labels"),
+        apiRequest<SavedView[]>("/api/views"),
       ]);
       setIssues(loadedIssues);
       setLabels(loadedLabels);
+      setSavedViews(loadedViews);
     } catch (requestError) {
       setError(messageFrom(requestError, "Issues could not be loaded"));
     } finally {
@@ -92,10 +100,14 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
       apiRequest<WorkspaceLabel[]>("/api/labels", {
         signal: controller.signal,
       }),
+      apiRequest<SavedView[]>("/api/views", {
+        signal: controller.signal,
+      }),
     ])
-      .then(([loadedIssues, loadedLabels]) => {
+      .then(([loadedIssues, loadedLabels, loadedViews]) => {
         setIssues(loadedIssues);
         setLabels(loadedLabels);
+        setSavedViews(loadedViews);
         setError(null);
       })
       .catch((requestError) => {
@@ -182,25 +194,70 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     [replaceIssue],
   );
 
+  const createSavedView = useCallback(async (input: SavedViewInput) => {
+    setError(null);
+
+    try {
+      const view = await apiRequest<SavedView>("/api/views", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      setSavedViews((current) =>
+        [...current, view].sort((left, right) =>
+          left.name.localeCompare(right.name),
+        ),
+      );
+      return view;
+    } catch (requestError) {
+      const message = messageFrom(
+        requestError,
+        "Saved view could not be created",
+      );
+      setError(message);
+      throw new Error(message);
+    }
+  }, []);
+
+  const deleteSavedView = useCallback(async (id: string) => {
+    setError(null);
+
+    try {
+      await apiRequest<void>(`/api/views/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      setSavedViews((current) => current.filter((view) => view.id !== id));
+      return true;
+    } catch (requestError) {
+      setError(messageFrom(requestError, "Saved view could not be deleted"));
+      return false;
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       issues,
       labels,
+      savedViews,
       isLoading,
       createIssue,
       updateStatus,
       updateIssue,
       addComment,
+      createSavedView,
+      deleteSavedView,
       refreshIssues,
     }),
     [
       issues,
       labels,
+      savedViews,
       isLoading,
       createIssue,
       updateStatus,
       updateIssue,
       addComment,
+      createSavedView,
+      deleteSavedView,
       refreshIssues,
     ],
   );

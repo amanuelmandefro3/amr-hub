@@ -28,11 +28,12 @@ model Issue {
 }
 
 model Label {
-  id        String       @id
-  name      String       @unique
-  color     String
-  createdAt DateTime     @default(now())
-  issues    IssueLabel[]
+  id         String       @id
+  name       String       @unique
+  color      String
+  createdAt  DateTime     @default(now())
+  issues     IssueLabel[]
+  savedViews SavedView[]
 }
 
 model IssueLabel {
@@ -66,4 +67,22 @@ model Activity {
   issue       Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
 
   @@index([issueId, createdAt])
+}
+
+model SavedView {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  owner     String   @default("Amanuel R.")
+  query     String   @default("")
+  status    String   @default("ALL")
+  priority  String   @default("ALL")
+  assignee  String   @default("ALL")
+  sort      String   @default("NEWEST")
+  labelId   String?
+  label     Label?   @relation(fields: [labelId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([owner])
+  @@index([labelId])
 }

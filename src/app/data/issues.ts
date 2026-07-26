@@ -39,6 +39,24 @@ export type WorkspaceLabel = {
   color: string;
 };
 
+export type SavedViewStatus = "ALL" | "ACTIVE" | IssueStatus;
+export type SavedViewPriority = "ALL" | IssuePriority;
+export type SavedViewSort = "NEWEST" | "OLDEST";
+
+export type SavedView = {
+  id: string;
+  name: string;
+  owner: string;
+  query: string;
+  status: SavedViewStatus;
+  priority: SavedViewPriority;
+  assignee: string;
+  sort: SavedViewSort;
+  labelId: string | null;
+};
+
+export type SavedViewInput = Omit<SavedView, "id" | "owner">;
+
 export type Issue = {
   id: string;
   title: string;
