@@ -21,11 +21,12 @@ server API backed by a local SQLite database.
 - Responsive desktop and mobile navigation
 - Keyboard shortcut: press `C` outside a form field to create an issue
 - Durable server persistence across browsers and page reloads
+- Automated validation and planning tests with a migration-aware CI pipeline
 - Branded Open Graph and social-sharing preview
 
 ## Run locally
 
-Requires Node.js 20.9 or newer.
+Requires Node.js 20.19 or newer.
 
 ```bash
 npm install
@@ -42,6 +43,7 @@ Open the local URL printed by Next.js. Production checks:
 
 ```bash
 npm run lint
+npm run test:run
 npm run build
 npm audit --omit=dev
 ```
@@ -57,6 +59,9 @@ npm audit --omit=dev
 - REST endpoints for issue loading, creation, editing, discussion, labels, and
   saved views
 - Server-owned issue numbering and audit event generation
+- Vitest coverage for API schemas and cycle calculations
+- GitHub Actions checks for dependency security, migrations, lint, tests, and
+  production builds
 
 ## Product roadmap
 
@@ -66,8 +71,8 @@ The next production milestones build on the durable server data:
 2. Attachments, custom fields, and richer planning metadata
 3. Backlog triage, cycle automation, workload forecasting, and dependencies
 4. Notifications plus GitHub, Slack, and error-monitoring integrations
-5. Automated API and component tests, accessibility checks, observability, rate
-   limiting, backups, and deployment runbooks
+5. Browser-level accessibility tests, observability, rate limiting, backups,
+   and deployment runbooks
 
 This scope follows the strongest patterns in established trackers: issues need
 clear ownership, priority, workflow state, and optional planning properties

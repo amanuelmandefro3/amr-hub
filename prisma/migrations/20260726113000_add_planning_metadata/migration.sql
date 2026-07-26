@@ -38,13 +38,13 @@ UPDATE "Issue" SET "dueDate" = '2026-07-30T12:00:00.000Z' WHERE "id" = 'AMR-127'
 UPDATE "Issue" SET "dueDate" = '2026-07-28T12:00:00.000Z' WHERE "id" = 'AMR-125';
 UPDATE "Issue" SET "dueDate" = '2026-08-03T12:00:00.000Z' WHERE "id" = 'AMR-124';
 
-INSERT OR IGNORE INTO "IssueLabel" ("issueId", "labelId") VALUES
-    ('AMR-128', 'label-customer'),
-    ('AMR-128', 'label-backend'),
-    ('AMR-127', 'label-frontend'),
-    ('AMR-125', 'label-frontend'),
-    ('AMR-125', 'label-reliability'),
-    ('AMR-124', 'label-customer'),
-    ('AMR-123', 'label-backend'),
-    ('AMR-122', 'label-frontend'),
-    ('AMR-121', 'label-design');
+INSERT OR IGNORE INTO "IssueLabel" ("issueId", "labelId")
+SELECT 'AMR-128', 'label-customer' WHERE EXISTS (SELECT 1 FROM "Issue" WHERE "id" = 'AMR-128')
+UNION ALL SELECT 'AMR-128', 'label-backend' WHERE EXISTS (SELECT 1 FROM "Issue" WHERE "id" = 'AMR-128')
+UNION ALL SELECT 'AMR-127', 'label-frontend' WHERE EXISTS (SELECT 1 FROM "Issue" WHERE "id" = 'AMR-127')
+UNION ALL SELECT 'AMR-125', 'label-frontend' WHERE EXISTS (SELECT 1 FROM "Issue" WHERE "id" = 'AMR-125')
+UNION ALL SELECT 'AMR-125', 'label-reliability' WHERE EXISTS (SELECT 1 FROM "Issue" WHERE "id" = 'AMR-125')
+UNION ALL SELECT 'AMR-124', 'label-customer' WHERE EXISTS (SELECT 1 FROM "Issue" WHERE "id" = 'AMR-124')
+UNION ALL SELECT 'AMR-123', 'label-backend' WHERE EXISTS (SELECT 1 FROM "Issue" WHERE "id" = 'AMR-123')
+UNION ALL SELECT 'AMR-122', 'label-frontend' WHERE EXISTS (SELECT 1 FROM "Issue" WHERE "id" = 'AMR-122')
+UNION ALL SELECT 'AMR-121', 'label-design' WHERE EXISTS (SELECT 1 FROM "Issue" WHERE "id" = 'AMR-121');
