@@ -21,7 +21,9 @@ export type IssueActivityType =
   | "ASSIGNEE_CHANGED"
   | "TYPE_CHANGED"
   | "CONTENT_UPDATED"
-  | "COMMENT_ADDED";
+  | "COMMENT_ADDED"
+  | "DUE_DATE_CHANGED"
+  | "LABELS_CHANGED";
 
 export type IssueActivity = {
   id: string;
@@ -29,6 +31,12 @@ export type IssueActivity = {
   description: string;
   actor: string;
   createdAt: string;
+};
+
+export type WorkspaceLabel = {
+  id: string;
+  name: string;
+  color: string;
 };
 
 export type Issue = {
@@ -39,6 +47,8 @@ export type Issue = {
   priority: IssuePriority;
   kind: IssueKind;
   assignee: string;
+  dueDate: string | null;
+  labels: WorkspaceLabel[];
   createdAt: string;
   comments?: IssueComment[];
   activity?: IssueActivity[];
@@ -47,14 +57,33 @@ export type Issue = {
 export type NewIssueInput = Pick<
   Issue,
   "title" | "description" | "priority" | "kind" | "assignee"
->;
+> & {
+  dueDate: string | null;
+  labelIds: string[];
+};
 
 export type IssueUpdates = Partial<
   Pick<
     Issue,
-    "title" | "description" | "status" | "priority" | "kind" | "assignee"
+    | "title"
+    | "description"
+    | "status"
+    | "priority"
+    | "kind"
+    | "assignee"
+    | "dueDate"
   >
->;
+> & {
+  labelIds?: string[];
+};
+
+export const WORKSPACE_LABELS: WorkspaceLabel[] = [
+  { id: "label-customer", name: "Customer impact", color: "#dc2626" },
+  { id: "label-frontend", name: "Frontend", color: "#2563eb" },
+  { id: "label-backend", name: "Backend", color: "#059669" },
+  { id: "label-reliability", name: "Reliability", color: "#d97706" },
+  { id: "label-design", name: "Design", color: "#7c3aed" },
+];
 
 export const DEMO_ISSUES: Issue[] = [
   {
@@ -66,6 +95,8 @@ export const DEMO_ISSUES: Issue[] = [
     priority: "URGENT",
     kind: "BUG",
     assignee: "Amanuel R.",
+    dueDate: "2026-07-27T12:00:00.000Z",
+    labels: [WORKSPACE_LABELS[0], WORKSPACE_LABELS[2]],
     createdAt: "2026-07-25T07:20:00.000Z",
     comments: [
       {
@@ -91,6 +122,8 @@ export const DEMO_ISSUES: Issue[] = [
     priority: "HIGH",
     kind: "FEATURE",
     assignee: "Maya Chen",
+    dueDate: "2026-07-30T12:00:00.000Z",
+    labels: [WORKSPACE_LABELS[1]],
     createdAt: "2026-07-24T13:40:00.000Z",
   },
   {
@@ -102,6 +135,8 @@ export const DEMO_ISSUES: Issue[] = [
     priority: "MEDIUM",
     kind: "TASK",
     assignee: "Jon Bell",
+    dueDate: null,
+    labels: [],
     createdAt: "2026-07-24T08:10:00.000Z",
   },
   {
@@ -113,6 +148,8 @@ export const DEMO_ISSUES: Issue[] = [
     priority: "HIGH",
     kind: "BUG",
     assignee: "Amanuel R.",
+    dueDate: "2026-07-28T12:00:00.000Z",
+    labels: [WORKSPACE_LABELS[1], WORKSPACE_LABELS[3]],
     createdAt: "2026-07-23T15:25:00.000Z",
     comments: [
       {
@@ -132,6 +169,8 @@ export const DEMO_ISSUES: Issue[] = [
     priority: "MEDIUM",
     kind: "TASK",
     assignee: "Unassigned",
+    dueDate: "2026-08-03T12:00:00.000Z",
+    labels: [WORKSPACE_LABELS[0]],
     createdAt: "2026-07-22T12:15:00.000Z",
   },
   {
@@ -143,6 +182,8 @@ export const DEMO_ISSUES: Issue[] = [
     priority: "LOW",
     kind: "FEATURE",
     assignee: "Maya Chen",
+    dueDate: null,
+    labels: [WORKSPACE_LABELS[2]],
     createdAt: "2026-07-21T16:50:00.000Z",
   },
   {
@@ -154,6 +195,8 @@ export const DEMO_ISSUES: Issue[] = [
     priority: "MEDIUM",
     kind: "BUG",
     assignee: "Jon Bell",
+    dueDate: null,
+    labels: [WORKSPACE_LABELS[1]],
     createdAt: "2026-07-20T10:30:00.000Z",
   },
   {
@@ -165,6 +208,8 @@ export const DEMO_ISSUES: Issue[] = [
     priority: "NO_PRIORITY",
     kind: "TASK",
     assignee: "Unassigned",
+    dueDate: null,
+    labels: [WORKSPACE_LABELS[4]],
     createdAt: "2026-07-19T09:05:00.000Z",
   },
 ];

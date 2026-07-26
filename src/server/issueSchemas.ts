@@ -17,6 +17,27 @@ export const issuePrioritySchema = z.enum([
 
 export const issueKindSchema = z.enum(["BUG", "FEATURE", "TASK"]);
 
+const dueDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(
+    (value) => {
+      const parsed = new Date(`${value}T12:00:00.000Z`);
+      return (
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.toISOString().slice(0, 10) === value
+      );
+    },
+    {
+      message: "Due date must be a valid calendar date",
+    },
+  );
+
+const labelIdsSchema = z
+  .array(z.string().trim().min(1).max(80))
+  .max(10)
+  .transform((labelIds) => [...new Set(labelIds)]);
+
 export const createIssueSchema = z
   .object({
     title: z.string().trim().min(4).max(255),
@@ -24,6 +45,8 @@ export const createIssueSchema = z
     priority: issuePrioritySchema,
     kind: issueKindSchema,
     assignee: z.string().trim().min(1).max(80),
+    dueDate: dueDateSchema.nullable(),
+    labelIds: labelIdsSchema,
   })
   .strict();
 
@@ -35,6 +58,8 @@ export const updateIssueSchema = z
     priority: issuePrioritySchema.optional(),
     kind: issueKindSchema.optional(),
     assignee: z.string().trim().min(1).max(80).optional(),
+    dueDate: dueDateSchema.nullable().optional(),
+    labelIds: labelIdsSchema.optional(),
   })
   .strict()
   .refine((updates) => Object.keys(updates).length > 0, {

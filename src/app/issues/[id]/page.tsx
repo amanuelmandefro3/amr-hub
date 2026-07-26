@@ -28,6 +28,7 @@ import {
   type IssuePriority,
   type IssueStatus,
   type IssueUpdates,
+  type WorkspaceLabel,
 } from "../../data/issues";
 import {
   KindIcon,
@@ -35,6 +36,7 @@ import {
   StatusBadge,
 } from "../../components/IssueVisuals";
 import { WorkspaceLoading } from "../../components/WorkspaceLoading";
+import { IssueLabelChip } from "../../components/IssueLabelChip";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -71,9 +73,13 @@ function ActivityIcon({ type }: { type: IssueActivity["type"] }) {
           ? UserRound
           : type === "CONTENT_UPDATED"
             ? FilePenLine
-            : type === "TYPE_CHANGED" || type === "PRIORITY_CHANGED"
-              ? Tag
-              : RefreshCcw;
+            : type === "DUE_DATE_CHANGED"
+              ? CalendarDays
+              : type === "TYPE_CHANGED" ||
+                  type === "PRIORITY_CHANGED" ||
+                  type === "LABELS_CHANGED"
+                ? Tag
+                : RefreshCcw;
 
   return (
     <span className={`activity-icon activity-${type.toLowerCase()}`}>
@@ -120,7 +126,7 @@ function IssueNotFound({ id }: { id: string }) {
 
 export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
-  const { issues, isLoading, addComment, updateIssue } = useIssues();
+  const { issues, labels, isLoading, addComment, updateIssue } = useIssues();
   const id = decodeURIComponent(params.id);
   const issue = issues.find((candidate) => candidate.id === id);
 
@@ -135,6 +141,7 @@ export default function IssueDetailPage() {
   return (
     <IssueDetail
       issue={issue}
+      labels={labels}
       onAddComment={addComment}
       onUpdateIssue={updateIssue}
     />
@@ -143,10 +150,12 @@ export default function IssueDetailPage() {
 
 function IssueDetail({
   issue,
+  labels,
   onAddComment,
   onUpdateIssue,
 }: {
   issue: Issue;
+  labels: WorkspaceLabel[];
   onAddComment: (issueId: string, body: string) => Promise<boolean>;
   onUpdateIssue: (
     issueId: string,
@@ -471,6 +480,50 @@ function IssueDetail({
                   <option>Jon Bell</option>
                 </select>
               </label>
+            </IssueProperty>
+            <IssueProperty label="Due date">
+              <label className="editable-date">
+                <CalendarDays size={14} aria-hidden="true" />
+                <span className="sr-only">Issue due date</span>
+                <input
+                  type="date"
+                  value={issue.dueDate?.slice(0, 10) ?? ""}
+                  onChange={(event) =>
+                    onUpdateIssue(issue.id, {
+                      dueDate: event.target.value || null,
+                    })
+                  }
+                />
+              </label>
+            </IssueProperty>
+            <IssueProperty label="Labels">
+              <div className="property-label-options">
+                {labels.map((label) => {
+                  const checked = issue.labels.some(
+                    (issueLabel) => issueLabel.id === label.id,
+                  );
+
+                  return (
+                    <label key={label.id}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          const currentIds = issue.labels.map(
+                            (issueLabel) => issueLabel.id,
+                          );
+                          void onUpdateIssue(issue.id, {
+                            labelIds: event.target.checked
+                              ? [...currentIds, label.id]
+                              : currentIds.filter((id) => id !== label.id),
+                          });
+                        }}
+                      />
+                      <IssueLabelChip label={label} compact />
+                    </label>
+                  );
+                })}
+              </div>
             </IssueProperty>
             <IssueProperty label="Created">
               <span className="property-date">

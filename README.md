@@ -13,6 +13,7 @@ server API backed by a local SQLite database.
 - Inline workflow status changes
 - Validated issue creation with type, priority, and ownership
 - Issue discussions and append-only activity history
+- Due dates, workspace labels, label filtering, and planning activity
 - Responsive desktop and mobile navigation
 - Keyboard shortcut: press `C` outside a form field to create an issue
 - Durable server persistence across browsers and page reloads
@@ -48,6 +49,7 @@ npm audit --omit=dev
 - Lucide icons
 - Zod request validation
 - Prisma and SQLite with relational issues, comments, and activity
+- Relational workspace labels and indexed issue planning metadata
 - REST endpoints for issue loading, creation, editing, and discussion
 - Server-owned issue numbering and audit event generation
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, CircleAlert, Sparkles } from "lucide-react";
 import { useIssues } from "../../IssueProvider";
+import { IssueLabelChip } from "../../components/IssueLabelChip";
 import {
   KIND_LABELS,
   PRIORITY_LABELS,
@@ -19,12 +20,14 @@ type FormErrors = {
 
 export default function NewIssuePage() {
   const router = useRouter();
-  const { createIssue } = useIssues();
+  const { createIssue, labels } = useIssues();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<IssuePriority>("MEDIUM");
   const [kind, setKind] = useState<IssueKind>("BUG");
   const [assignee, setAssignee] = useState("Unassigned");
+  const [dueDate, setDueDate] = useState("");
+  const [labelIds, setLabelIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -56,6 +59,8 @@ export default function NewIssuePage() {
         priority,
         kind,
         assignee,
+        dueDate: dueDate || null,
+        labelIds,
       });
       router.push(`/issues/${issue.id}`);
     } catch (error) {
@@ -198,7 +203,37 @@ export default function NewIssuePage() {
                   <option>Jon Bell</option>
                 </select>
               </label>
+              <label className="form-field">
+                <span>Due date</span>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(event) => setDueDate(event.target.value)}
+                />
+              </label>
             </div>
+
+            <fieldset className="form-field label-field">
+              <legend>Labels</legend>
+              <div className="label-options">
+                {labels.map((label) => (
+                  <label key={label.id}>
+                    <input
+                      type="checkbox"
+                      checked={labelIds.includes(label.id)}
+                      onChange={(event) =>
+                        setLabelIds((current) =>
+                          event.target.checked
+                            ? [...current, label.id]
+                            : current.filter((id) => id !== label.id),
+                        )
+                      }
+                    />
+                    <IssueLabelChip label={label} />
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           </div>
 
           <div className="form-actions">

@@ -23,8 +23,12 @@
   --blue-600: #2e64b3;
   --amber-50: #fff7e8;
   --amber-500: #d18a20;
+  --amber-600: #ad6d13;
   --red-50: #fff0ef;
+  --red-200: #f3c7c4;
   --red-500: #d8514d;
+  --red-600: #b83c38;
+  --red-700: #8f2f2c;
   --sidebar-width: 244px;
   --radius: 7px;
 }
@@ -1024,6 +1028,68 @@ h2 {
   font-size: 10px;
 }
 
+.issue-row-meta {
+  display: flex;
+  min-height: 18px;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.issue-label-chip {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  height: 24px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--label-color) 25%, white);
+  border-radius: 5px;
+  color: var(--label-color);
+  background: color-mix(in srgb, var(--label-color) 8%, white);
+  font-size: 10px;
+  font-weight: 620;
+  white-space: nowrap;
+}
+
+.issue-label-chip i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--label-color);
+}
+
+.issue-label-chip.compact {
+  height: 18px;
+  gap: 4px;
+  padding: 0 5px;
+  font-size: 8px;
+}
+
+.issue-main-cell .issue-label-chip {
+  color: var(--label-color);
+  font-size: 8px;
+}
+
+.issue-due-date {
+  font-weight: 620;
+}
+
+.issue-due-date.due-soon {
+  color: var(--amber-600);
+}
+
+.issue-due-date.overdue {
+  color: var(--red-600);
+}
+
+.issue-no-due-date {
+  color: var(--gray-400);
+  font-size: 9px;
+}
+
 .inline-status {
   display: inline-flex;
   width: fit-content;
@@ -1243,8 +1309,58 @@ h2 {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.label-field {
+  padding: 0;
+  border: 0;
+}
+
+.label-field legend {
+  margin-bottom: 8px;
+  color: var(--gray-700);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.label-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.label-options > label,
+.property-label-options > label {
+  position: relative;
+  cursor: pointer;
+}
+
+.label-options input,
+.property-label-options input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.label-options input:not(:checked) + .issue-label-chip,
+.property-label-options input:not(:checked) + .issue-label-chip {
+  border-color: var(--gray-200);
+  color: var(--gray-500);
+  background: #fff;
+}
+
+.label-options input:not(:checked) + .issue-label-chip i,
+.property-label-options input:not(:checked) + .issue-label-chip i {
+  background: var(--gray-300);
+}
+
+.label-options input:focus-visible + .issue-label-chip,
+.property-label-options input:focus-visible + .issue-label-chip {
+  outline: 2px solid var(--green-500);
+  outline-offset: 2px;
 }
 
 .form-actions {
@@ -1490,6 +1606,43 @@ h2 {
   min-width: 0;
   align-items: center;
   gap: 7px;
+}
+
+.editable-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--gray-500);
+}
+
+.editable-date input {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 3px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  outline: 0;
+  color: var(--gray-700);
+  background: transparent;
+  font-size: 10px;
+}
+
+.editable-date input:hover {
+  border-color: var(--gray-200);
+  background: var(--gray-25);
+}
+
+.editable-date input:focus {
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 2px var(--green-50);
+}
+
+.property-label-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 3px 0;
 }
 
 .editable-property {
@@ -1749,6 +1902,16 @@ h2 {
 .activity-comment_added {
   color: var(--green-600);
   background: var(--green-50);
+}
+
+.activity-due_date_changed {
+  color: var(--amber-600);
+  background: var(--amber-50);
+}
+
+.activity-labels_changed {
+  color: var(--blue-600);
+  background: var(--blue-50);
 }
 
 .activity-item > div:last-child {

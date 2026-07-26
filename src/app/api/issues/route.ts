@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createIssueSchema } from "../../../server/issueSchemas";
-import { createIssue, listIssues } from "../../../server/issues";
+import {
+  createIssue,
+  listIssues,
+  UnknownLabelError,
+} from "../../../server/issues";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +43,10 @@ export async function POST(request: NextRequest) {
         { error: "Request body must be valid JSON" },
         { status: 400 },
       );
+    }
+
+    if (error instanceof UnknownLabelError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     console.error("Failed to create issue", error);

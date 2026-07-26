@@ -13,10 +13,12 @@ import {
   type IssueStatus,
   type IssueUpdates,
   type NewIssueInput,
+  type WorkspaceLabel,
 } from "./data/issues";
 
 type IssueContextValue = {
   issues: Issue[];
+  labels: WorkspaceLabel[];
   isLoading: boolean;
   createIssue: (issue: NewIssueInput) => Promise<Issue>;
   updateStatus: (id: string, status: IssueStatus) => Promise<boolean>;
@@ -60,6 +62,7 @@ async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
 
 export function IssueProvider({ children }: { children: React.ReactNode }) {
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [labels, setLabels] = useState<WorkspaceLabel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +71,12 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      setIssues(await apiRequest<Issue[]>("/api/issues"));
+      const [loadedIssues, loadedLabels] = await Promise.all([
+        apiRequest<Issue[]>("/api/issues"),
+        apiRequest<WorkspaceLabel[]>("/api/labels"),
+      ]);
+      setIssues(loadedIssues);
+      setLabels(loadedLabels);
     } catch (requestError) {
       setError(messageFrom(requestError, "Issues could not be loaded"));
     } finally {
@@ -79,9 +87,15 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const controller = new AbortController();
 
-    apiRequest<Issue[]>("/api/issues", { signal: controller.signal })
-      .then((loadedIssues) => {
+    Promise.all([
+      apiRequest<Issue[]>("/api/issues", { signal: controller.signal }),
+      apiRequest<WorkspaceLabel[]>("/api/labels", {
+        signal: controller.signal,
+      }),
+    ])
+      .then(([loadedIssues, loadedLabels]) => {
         setIssues(loadedIssues);
+        setLabels(loadedLabels);
         setError(null);
       })
       .catch((requestError) => {
@@ -171,6 +185,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       issues,
+      labels,
       isLoading,
       createIssue,
       updateStatus,
@@ -180,6 +195,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       issues,
+      labels,
       isLoading,
       createIssue,
       updateStatus,

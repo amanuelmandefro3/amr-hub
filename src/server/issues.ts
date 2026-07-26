@@ -5,6 +5,7 @@ import {
   KIND_LABELS,
   PRIORITY_LABELS,
   STATUS_LABELS,
+  WORKSPACE_LABELS,
   type Issue,
   type IssueActivity,
   type IssueActivityType,
@@ -13,6 +14,7 @@ import {
   type IssueStatus,
   type IssueUpdates,
   type NewIssueInput,
+  type WorkspaceLabel,
 } from "../app/data/issues";
 
 export const CURRENT_USER = "Amanuel R.";
@@ -23,6 +25,10 @@ const issueInclude = {
   },
   activity: {
     orderBy: { createdAt: "desc" },
+  },
+  labels: {
+    include: { label: true },
+    orderBy: { label: { name: "asc" } },
   },
 } satisfies Prisma.IssueInclude;
 
@@ -39,6 +45,12 @@ function serializeIssue(issue: StoredIssue): Issue {
     priority: issue.priority as IssuePriority,
     kind: issue.kind as IssueKind,
     assignee: issue.assignee,
+    dueDate: issue.dueDate?.toISOString() ?? null,
+    labels: issue.labels.map(({ label }) => ({
+      id: label.id,
+      name: label.name,
+      color: label.color,
+    })),
     createdAt: issue.createdAt.toISOString(),
     comments: issue.comments.map((comment) => ({
       id: comment.id,
@@ -62,6 +74,7 @@ function issueSequence(id: string) {
 }
 
 async function ensureDemoWorkspace() {
+  await ensureWorkspaceLabels();
   if ((await prisma.issue.count()) > 0) return;
 
   try {
@@ -77,7 +90,13 @@ async function ensureDemoWorkspace() {
             priority: issue.priority,
             kind: issue.kind,
             assignee: issue.assignee,
+            dueDate: issue.dueDate ? new Date(issue.dueDate) : null,
             createdAt: new Date(issue.createdAt),
+            labels: {
+              create: issue.labels.map((label) => ({
+                label: { connect: { id: label.id } },
+              })),
+            },
             comments: {
               create: (issue.comments ?? []).map((comment) => ({
                 id: comment.id,
@@ -111,6 +130,35 @@ async function ensureDemoWorkspace() {
   }
 }
 
+export async function ensureWorkspaceLabels() {
+  if ((await prisma.label.count()) >= WORKSPACE_LABELS.length) return;
+
+  await prisma.$transaction(
+    WORKSPACE_LABELS.map((label) =>
+      prisma.label.upsert({
+        where: { id: label.id },
+        create: label,
+        update: {
+          name: label.name,
+          color: label.color,
+        },
+      }),
+    ),
+  );
+}
+
+export async function listLabels(): Promise<WorkspaceLabel[]> {
+  await ensureWorkspaceLabels();
+  return prisma.label.findMany({
+    select: {
+      id: true,
+      name: true,
+      color: true,
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
 export async function listIssues() {
   await ensureDemoWorkspace();
 
@@ -123,25 +171,72 @@ export async function listIssues() {
 }
 
 export async function createIssue(input: NewIssueInput) {
+  await ensureWorkspaceLabels();
+  await validateLabelIds(input.labelIds);
+
   const issue = await prisma.$transaction(async (transaction) => {
     const latestIssue = await transaction.issue.findFirst({
       orderBy: { sequence: "desc" },
       select: { sequence: true },
     });
     const sequence = (latestIssue?.sequence ?? 128) + 1;
+    const { dueDate, labelIds, ...fields } = input;
 
     return transaction.issue.create({
       data: {
-        ...input,
+        ...fields,
         id: `AMR-${sequence}`,
         sequence,
         status: "OPEN",
+        dueDate: dueDate ? parseDueDate(dueDate) : null,
+        labels: {
+          create: labelIds.map((labelId) => ({
+            label: { connect: { id: labelId } },
+          })),
+        },
       },
       include: issueInclude,
     });
   });
 
   return serializeIssue(issue);
+}
+
+function parseDueDate(value: string) {
+  return new Date(`${value}T12:00:00.000Z`);
+}
+
+function dueDateKey(value: Date | string | null) {
+  if (!value) return null;
+  return (value instanceof Date ? value.toISOString() : value).slice(0, 10);
+}
+
+function formatDueDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parseDueDate(value));
+}
+
+async function validateLabelIds(labelIds: string[]) {
+  if (labelIds.length === 0) return;
+
+  const count = await prisma.label.count({
+    where: { id: { in: labelIds } },
+  });
+
+  if (count !== labelIds.length) {
+    throw new UnknownLabelError();
+  }
+}
+
+export class UnknownLabelError extends Error {
+  constructor() {
+    super("One or more labels do not exist");
+    this.name = "UnknownLabelError";
+  }
 }
 
 function buildActivity(
@@ -205,10 +300,41 @@ function buildActivity(
     });
   }
 
+  if (
+    updates.dueDate !== undefined &&
+    dueDateKey(updates.dueDate) !== dueDateKey(current.dueDate)
+  ) {
+    events.push({
+      type: "DUE_DATE_CHANGED",
+      description: updates.dueDate
+        ? `set the due date to ${formatDueDate(updates.dueDate)}`
+        : "removed the due date",
+      actor: CURRENT_USER,
+    });
+  }
+
+  if (updates.labelIds) {
+    const currentLabelIds = current.labels.map(({ labelId }) => labelId).sort();
+    const nextLabelIds = [...updates.labelIds].sort();
+
+    if (currentLabelIds.join(",") !== nextLabelIds.join(",")) {
+      events.push({
+        type: "LABELS_CHANGED",
+        description: "updated issue labels",
+        actor: CURRENT_USER,
+      });
+    }
+  }
+
   return events;
 }
 
 export async function updateIssue(id: string, updates: IssueUpdates) {
+  if (updates.labelIds) {
+    await ensureWorkspaceLabels();
+    await validateLabelIds(updates.labelIds);
+  }
+
   const issue = await prisma.$transaction(async (transaction) => {
     const current = await transaction.issue.findUnique({
       where: { id },
@@ -220,11 +346,25 @@ export async function updateIssue(id: string, updates: IssueUpdates) {
     const activity = buildActivity(current, updates);
     const changed = activity.length > 0;
     if (!changed) return current;
+    const { dueDate, labelIds, ...fields } = updates;
 
     return transaction.issue.update({
       where: { id },
       data: {
-        ...updates,
+        ...fields,
+        ...(dueDate !== undefined
+          ? { dueDate: dueDate ? parseDueDate(dueDate) : null }
+          : {}),
+        ...(labelIds
+          ? {
+              labels: {
+                deleteMany: {},
+                create: labelIds.map((labelId) => ({
+                  label: { connect: { id: labelId } },
+                })),
+              },
+            }
+          : {}),
         activity: {
           create: activity,
         },

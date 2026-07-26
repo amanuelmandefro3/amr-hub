@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateIssueSchema } from "../../../../server/issueSchemas";
-import { updateIssue } from "../../../../server/issues";
+import {
+  UnknownLabelError,
+  updateIssue,
+} from "../../../../server/issues";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -34,6 +37,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         { error: "Request body must be valid JSON" },
         { status: 400 },
       );
+    }
+
+    if (error instanceof UnknownLabelError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     console.error("Failed to update issue", error);

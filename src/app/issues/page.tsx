@@ -7,6 +7,7 @@ import {
   ListFilter,
   Plus,
   Search,
+  Tag,
 } from "lucide-react";
 import { useIssues } from "../IssueProvider";
 import {
@@ -17,6 +18,7 @@ import {
 } from "../data/issues";
 import { KindIcon, PriorityBadge } from "../components/IssueVisuals";
 import { WorkspaceLoading } from "../components/WorkspaceLoading";
+import { IssueLabelChip } from "../components/IssueLabelChip";
 
 type StatusFilter = "ALL" | "ACTIVE" | IssueStatus;
 
@@ -34,6 +36,20 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function dueDateState(value: string) {
+  const dueDate = new Date(value);
+  const today = new Date();
+  dueDate.setUTCHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
+  const daysUntilDue = Math.round(
+    (dueDate.getTime() - today.getTime()) / 86_400_000,
+  );
+
+  if (daysUntilDue < 0) return "overdue";
+  if (daysUntilDue <= 2) return "due-soon";
+  return "scheduled";
+}
+
 function initials(name: string) {
   if (name === "Unassigned") return "?";
   return name
@@ -44,13 +60,14 @@ function initials(name: string) {
 }
 
 export default function IssuesPage() {
-  const { issues, isLoading, updateStatus } = useIssues();
+  const { issues, labels, isLoading, updateStatus } = useIssues();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<IssuePriority | "ALL">(
     "ALL",
   );
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
+  const [labelFilter, setLabelFilter] = useState("ALL");
 
   const visibleIssues = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -61,22 +78,37 @@ export default function IssuesPage() {
           !normalizedQuery ||
           issue.title.toLowerCase().includes(normalizedQuery) ||
           issue.id.toLowerCase().includes(normalizedQuery) ||
-          issue.assignee.toLowerCase().includes(normalizedQuery);
+          issue.assignee.toLowerCase().includes(normalizedQuery) ||
+          issue.labels.some((label) =>
+            label.name.toLowerCase().includes(normalizedQuery),
+          );
         const matchesStatus =
           statusFilter === "ALL" ||
           (statusFilter === "ACTIVE" && issue.status !== "DONE") ||
           issue.status === statusFilter;
         const matchesPriority =
           priorityFilter === "ALL" || issue.priority === priorityFilter;
+        const matchesLabel =
+          labelFilter === "ALL" ||
+          issue.labels.some((label) => label.id === labelFilter);
 
-        return matchesQuery && matchesStatus && matchesPriority;
+        return (
+          matchesQuery && matchesStatus && matchesPriority && matchesLabel
+        );
       })
       .sort((left, right) => {
         const difference =
           new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
         return sortNewestFirst ? difference : -difference;
       });
-  }, [issues, priorityFilter, query, sortNewestFirst, statusFilter]);
+  }, [
+    issues,
+    labelFilter,
+    priorityFilter,
+    query,
+    sortNewestFirst,
+    statusFilter,
+  ]);
 
   if (isLoading) {
     return <WorkspaceLoading label="issues" />;
@@ -142,6 +174,21 @@ export default function IssuesPage() {
               ))}
             </select>
           </label>
+          <label className="select-button">
+            <Tag size={16} aria-hidden="true" />
+            <span className="sr-only">Filter by label</span>
+            <select
+              value={labelFilter}
+              onChange={(event) => setLabelFilter(event.target.value)}
+            >
+              <option value="ALL">All labels</option>
+              {labels.map((label) => (
+                <option value={label.id} key={label.id}>
+                  {label.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
 
@@ -167,7 +214,7 @@ export default function IssuesPage() {
           <span>Priority</span>
           <span>Status</span>
           <span>Assignee</span>
-          <span>Created</span>
+          <span>Due</span>
         </div>
 
         <div className="issues-table-body">
@@ -177,7 +224,12 @@ export default function IssuesPage() {
                 <KindIcon kind={issue.kind} />
                 <div>
                   <Link href={`/issues/${issue.id}`}>{issue.title}</Link>
-                  <span>{issue.id}</span>
+                  <div className="issue-row-meta">
+                    <span>{issue.id}</span>
+                    {issue.labels.slice(0, 2).map((label) => (
+                      <IssueLabelChip label={label} compact key={label.id} />
+                    ))}
+                  </div>
                 </div>
               </div>
               <PriorityBadge priority={issue.priority} />
@@ -201,7 +253,16 @@ export default function IssuesPage() {
                 <span className="avatar">{initials(issue.assignee)}</span>
                 <span>{issue.assignee}</span>
               </div>
-              <time dateTime={issue.createdAt}>{formatDate(issue.createdAt)}</time>
+              {issue.dueDate ? (
+                <time
+                  className={`issue-due-date ${dueDateState(issue.dueDate)}`}
+                  dateTime={issue.dueDate}
+                >
+                  {formatDate(issue.dueDate)}
+                </time>
+              ) : (
+                <span className="issue-no-due-date">No date</span>
+              )}
             </article>
           ))}
         </div>
@@ -218,6 +279,7 @@ export default function IssuesPage() {
                 setQuery("");
                 setStatusFilter("ALL");
                 setPriorityFilter("ALL");
+                setLabelFilter("ALL");
               }}
             >
               Clear filters

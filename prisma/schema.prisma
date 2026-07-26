@@ -8,21 +8,41 @@ datasource db {
 }
 
 model Issue {
-  id          String     @id
-  sequence    Int        @unique
+  id          String       @id
+  sequence    Int          @unique
   title       String
   description String
-  status      String     @default("OPEN")
-  priority    String     @default("MEDIUM")
-  kind        String     @default("TASK")
-  assignee    String     @default("Unassigned")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  status      String       @default("OPEN")
+  priority    String       @default("MEDIUM")
+  kind        String       @default("TASK")
+  assignee    String       @default("Unassigned")
+  dueDate     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   comments    Comment[]
   activity    Activity[]
+  labels      IssueLabel[]
 
   @@index([createdAt])
   @@index([status])
+}
+
+model Label {
+  id        String       @id
+  name      String       @unique
+  color     String
+  createdAt DateTime     @default(now())
+  issues    IssueLabel[]
+}
+
+model IssueLabel {
+  issueId String
+  labelId String
+  issue   Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([issueId, labelId])
+  @@index([labelId])
 }
 
 model Comment {
