@@ -27,12 +27,14 @@ import {
   type IssueKind,
   type IssuePriority,
   type IssueStatus,
+  type IssueUpdates,
 } from "../../data/issues";
 import {
   KindIcon,
   PriorityBadge,
   StatusBadge,
 } from "../../components/IssueVisuals";
+import { WorkspaceLoading } from "../../components/WorkspaceLoading";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -118,9 +120,13 @@ function IssueNotFound({ id }: { id: string }) {
 
 export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
-  const { issues, addComment, updateIssue } = useIssues();
+  const { issues, isLoading, addComment, updateIssue } = useIssues();
   const id = decodeURIComponent(params.id);
   const issue = issues.find((candidate) => candidate.id === id);
+
+  if (isLoading) {
+    return <WorkspaceLoading label="issue" />;
+  }
 
   if (!issue) {
     return <IssueNotFound id={id} />;
@@ -141,19 +147,16 @@ function IssueDetail({
   onUpdateIssue,
 }: {
   issue: Issue;
-  onAddComment: (issueId: string, body: string) => unknown;
+  onAddComment: (issueId: string, body: string) => Promise<boolean>;
   onUpdateIssue: (
     issueId: string,
-    updates: Partial<
-      Pick<
-        Issue,
-        "title" | "description" | "status" | "priority" | "kind" | "assignee"
-      >
-    >,
-  ) => void;
+    updates: IssueUpdates,
+  ) => Promise<boolean>;
 }) {
   const [comment, setComment] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCommenting, setIsCommenting] = useState(false);
   const [draftTitle, setDraftTitle] = useState(issue.title);
   const [draftDescription, setDraftDescription] = useState(issue.description);
   const comments = issue.comments ?? [];
@@ -171,13 +174,15 @@ function IssueDetail({
   const canSave =
     draftTitle.trim().length >= 4 && draftDescription.trim().length >= 12;
 
-  const handleComment = (event: FormEvent<HTMLFormElement>) => {
+  const handleComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const body = comment.trim();
     if (body.length < 2) return;
 
-    onAddComment(issue.id, body);
-    setComment("");
+    setIsCommenting(true);
+    const saved = await onAddComment(issue.id, body);
+    if (saved) setComment("");
+    setIsCommenting(false);
   };
 
   const startEditing = () => {
@@ -192,13 +197,15 @@ function IssueDetail({
     setIsEditing(false);
   };
 
-  const saveEditing = () => {
+  const saveEditing = async () => {
     if (!canSave) return;
-    onUpdateIssue(issue.id, {
+    setIsSaving(true);
+    const saved = await onUpdateIssue(issue.id, {
       title: draftTitle.trim(),
       description: draftDescription.trim(),
     });
-    setIsEditing(false);
+    if (saved) setIsEditing(false);
+    setIsSaving(false);
   };
 
   return (
@@ -230,11 +237,11 @@ function IssueDetail({
                 <button
                   className="primary-button"
                   type="button"
-                  onClick={saveEditing}
-                  disabled={!canSave}
+                  onClick={() => void saveEditing()}
+                  disabled={!canSave || isSaving}
                 >
                   <Check size={15} aria-hidden="true" />
-                  Save
+                  {isSaving ? "Saving..." : "Save"}
                 </button>
               </>
             ) : (
@@ -343,10 +350,10 @@ function IssueDetail({
               <button
                 className="primary-button"
                 type="submit"
-                disabled={comment.trim().length < 2}
+                disabled={comment.trim().length < 2 || isCommenting}
               >
                 <Send size={15} aria-hidden="true" />
-                Comment
+                {isCommenting ? "Posting..." : "Comment"}
               </button>
             </form>
           </section>

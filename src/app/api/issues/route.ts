@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createIssueSchema } from "../../../server/issueSchemas";
+import { createIssue, listIssues } from "../../../server/issues";
+
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  try {
+    return NextResponse.json(await listIssues());
+  } catch (error) {
+    console.error("Failed to load issues", error);
+    return NextResponse.json(
+      { error: "Issues could not be loaded" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const validation = createIssueSchema.safeParse(await request.json());
+
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          fields: validation.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      );
+    }
+
+    return NextResponse.json(await createIssue(validation.data), {
+      status: 201,
+    });
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: "Request body must be valid JSON" },
+        { status: 400 },
+      );
+    }
+
+    console.error("Failed to create issue", error);
+    return NextResponse.json(
+      { error: "Issue could not be created" },
+      { status: 500 },
+    );
+  }
+}

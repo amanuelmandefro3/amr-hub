@@ -44,6 +44,18 @@ export type Issue = {
   activity?: IssueActivity[];
 };
 
+export type NewIssueInput = Pick<
+  Issue,
+  "title" | "description" | "priority" | "kind" | "assignee"
+>;
+
+export type IssueUpdates = Partial<
+  Pick<
+    Issue,
+    "title" | "description" | "status" | "priority" | "kind" | "assignee"
+  >
+>;
+
 export const DEMO_ISSUES: Issue[] = [
   {
     id: "AMR-128",

@@ -16,6 +16,7 @@ import {
   type IssueStatus,
 } from "../data/issues";
 import { KindIcon, PriorityBadge } from "../components/IssueVisuals";
+import { WorkspaceLoading } from "../components/WorkspaceLoading";
 
 type StatusFilter = "ALL" | "ACTIVE" | IssueStatus;
 
@@ -43,7 +44,7 @@ function initials(name: string) {
 }
 
 export default function IssuesPage() {
-  const { issues, updateStatus, resetDemo } = useIssues();
+  const { issues, isLoading, updateStatus } = useIssues();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<IssuePriority | "ALL">(
@@ -76,6 +77,10 @@ export default function IssuesPage() {
         return sortNewestFirst ? difference : -difference;
       });
   }, [issues, priorityFilter, query, sortNewestFirst, statusFilter]);
+
+  if (isLoading) {
+    return <WorkspaceLoading label="issues" />;
+  }
 
   return (
     <div className="page issues-page">
@@ -213,7 +218,6 @@ export default function IssuesPage() {
                 setQuery("");
                 setStatusFilter("ALL");
                 setPriorityFilter("ALL");
-                resetDemo();
               }}
             >
               Clear filters

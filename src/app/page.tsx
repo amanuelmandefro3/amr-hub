@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useIssues } from "./IssueProvider";
 import { IssueVisualRow } from "./components/IssueVisualRow";
+import { WorkspaceLoading } from "./components/WorkspaceLoading";
 
 const throughput = [
   { day: "Mon", opened: 3, closed: 2 },
@@ -24,7 +25,12 @@ const throughput = [
 ];
 
 export default function Home() {
-  const { issues } = useIssues();
+  const { issues, isLoading } = useIssues();
+
+  if (isLoading) {
+    return <WorkspaceLoading label="overview" />;
+  }
+
   const active = issues.filter((issue) => issue.status !== "DONE").length;
   const inProgress = issues.filter(
     (issue) => issue.status === "IN_PROGRESS",

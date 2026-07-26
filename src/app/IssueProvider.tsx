@@ -4,246 +4,206 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
-  useSyncExternalStore,
+  useState,
 } from "react";
 import {
-  DEMO_ISSUES,
-  KIND_LABELS,
-  PRIORITY_LABELS,
-  STATUS_LABELS,
   type Issue,
-  type IssueActivity,
-  type IssueActivityType,
-  type IssueComment,
-  type IssueKind,
-  type IssuePriority,
   type IssueStatus,
+  type IssueUpdates,
+  type NewIssueInput,
 } from "./data/issues";
-
-type NewIssue = {
-  title: string;
-  description: string;
-  priority: IssuePriority;
-  kind: IssueKind;
-  assignee: string;
-};
-
-type IssueUpdates = Partial<
-  Pick<
-    Issue,
-    "title" | "description" | "status" | "priority" | "kind" | "assignee"
-  >
->;
 
 type IssueContextValue = {
   issues: Issue[];
-  createIssue: (issue: NewIssue) => Issue;
-  updateStatus: (id: string, status: IssueStatus) => void;
-  updateIssue: (id: string, updates: IssueUpdates) => void;
-  addComment: (issueId: string, body: string) => IssueComment;
-  resetDemo: () => void;
+  isLoading: boolean;
+  createIssue: (issue: NewIssueInput) => Promise<Issue>;
+  updateStatus: (id: string, status: IssueStatus) => Promise<boolean>;
+  updateIssue: (id: string, updates: IssueUpdates) => Promise<boolean>;
+  addComment: (issueId: string, body: string) => Promise<boolean>;
+  refreshIssues: () => Promise<void>;
 };
 
-const STORAGE_KEY = "amr-hub-issues-v1";
-const CURRENT_USER = "Amanuel R.";
 const IssueContext = createContext<IssueContextValue | null>(null);
-const listeners = new Set<() => void>();
-let clientIssues: Issue[] | undefined;
 
-function getClientIssues() {
-  if (clientIssues) return clientIssues;
+function messageFrom(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
-  try {
-    const savedIssues = window.localStorage.getItem(STORAGE_KEY);
-    clientIssues = savedIssues
-      ? (JSON.parse(savedIssues) as Issue[])
-      : DEMO_ISSUES;
-  } catch {
-    window.localStorage.removeItem(STORAGE_KEY);
-    clientIssues = DEMO_ISSUES;
+async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...init?.headers,
+    },
+  });
+  const payload: unknown = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const responseError =
+      typeof payload === "object" &&
+      payload !== null &&
+      "error" in payload &&
+      typeof payload.error === "string"
+        ? payload.error
+        : null;
+
+    throw new Error(
+      responseError ?? "The workspace request failed",
+    );
   }
 
-  return clientIssues;
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-function saveIssues(issues: Issue[]) {
-  clientIssues = issues;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(issues));
-  listeners.forEach((listener) => listener());
-}
-
-function createActivity(
-  type: IssueActivityType,
-  description: string,
-): IssueActivity {
-  const createdAt = new Date().toISOString();
-
-  return {
-    id: `activity-${createdAt}-${Math.random().toString(36).slice(2, 8)}`,
-    type,
-    description,
-    actor: CURRENT_USER,
-    createdAt,
-  };
-}
-
-function updateStoredIssue(id: string, updates: IssueUpdates) {
-  saveIssues(
-    getClientIssues().map((issue) => {
-      if (issue.id !== id) return issue;
-
-      const events: IssueActivity[] = [];
-
-      if (updates.status && updates.status !== issue.status) {
-        events.push(
-          createActivity(
-            "STATUS_CHANGED",
-            `changed status from ${STATUS_LABELS[issue.status]} to ${
-              STATUS_LABELS[updates.status]
-            }`,
-          ),
-        );
-      }
-
-      if (updates.priority && updates.priority !== issue.priority) {
-        events.push(
-          createActivity(
-            "PRIORITY_CHANGED",
-            `changed priority from ${PRIORITY_LABELS[issue.priority]} to ${
-              PRIORITY_LABELS[updates.priority]
-            }`,
-          ),
-        );
-      }
-
-      if (updates.assignee && updates.assignee !== issue.assignee) {
-        events.push(
-          createActivity(
-            "ASSIGNEE_CHANGED",
-            updates.assignee === "Unassigned"
-              ? "removed the assignee"
-              : `assigned the issue to ${updates.assignee}`,
-          ),
-        );
-      }
-
-      if (updates.kind && updates.kind !== issue.kind) {
-        events.push(
-          createActivity(
-            "TYPE_CHANGED",
-            `changed type from ${KIND_LABELS[issue.kind]} to ${
-              KIND_LABELS[updates.kind]
-            }`,
-          ),
-        );
-      }
-
-      const changedTitle =
-        updates.title !== undefined && updates.title !== issue.title;
-      const changedDescription =
-        updates.description !== undefined &&
-        updates.description !== issue.description;
-
-      if (changedTitle || changedDescription) {
-        events.push(createActivity("CONTENT_UPDATED", "updated issue details"));
-      }
-
-      if (events.length === 0) return issue;
-
-      return {
-        ...issue,
-        ...updates,
-        activity: [...(issue.activity ?? []), ...events],
-      };
-    }),
-  );
+  return payload as T;
 }
 
 export function IssueProvider({ children }: { children: React.ReactNode }) {
-  const issues = useSyncExternalStore(
-    subscribe,
-    getClientIssues,
-    () => DEMO_ISSUES,
-  );
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const createIssue = useCallback(
-    (input: NewIssue) => {
-      const maxId = issues.reduce((highest, issue) => {
-        const number = Number(issue.id.split("-")[1]);
-        return Number.isNaN(number) ? highest : Math.max(highest, number);
-      }, 128);
+  const refreshIssues = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
-      const issue: Issue = {
-        ...input,
-        id: `AMR-${maxId + 1}`,
-        status: "OPEN",
-        createdAt: new Date().toISOString(),
-        comments: [],
-      };
+    try {
+      setIssues(await apiRequest<Issue[]>("/api/issues"));
+    } catch (requestError) {
+      setError(messageFrom(requestError, "Issues could not be loaded"));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-      saveIssues([issue, ...issues]);
+  useEffect(() => {
+    const controller = new AbortController();
+
+    apiRequest<Issue[]>("/api/issues", { signal: controller.signal })
+      .then((loadedIssues) => {
+        setIssues(loadedIssues);
+        setError(null);
+      })
+      .catch((requestError) => {
+        if (!controller.signal.aborted) {
+          setError(messageFrom(requestError, "Issues could not be loaded"));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  const replaceIssue = useCallback((nextIssue: Issue) => {
+    setIssues((current) =>
+      current.map((issue) => (issue.id === nextIssue.id ? nextIssue : issue)),
+    );
+  }, []);
+
+  const createIssue = useCallback(async (input: NewIssueInput) => {
+    setError(null);
+
+    try {
+      const issue = await apiRequest<Issue>("/api/issues", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      setIssues((current) => [issue, ...current]);
       return issue;
+    } catch (requestError) {
+      const message = messageFrom(requestError, "Issue could not be created");
+      setError(message);
+      throw new Error(message);
+    }
+  }, []);
+
+  const updateIssue = useCallback(
+    async (id: string, updates: IssueUpdates) => {
+      setError(null);
+
+      try {
+        const issue = await apiRequest<Issue>(
+          `/api/issues/${encodeURIComponent(id)}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify(updates),
+          },
+        );
+        replaceIssue(issue);
+        return true;
+      } catch (requestError) {
+        setError(messageFrom(requestError, "Issue could not be updated"));
+        return false;
+      }
     },
-    [issues],
+    [replaceIssue],
   );
 
-  const updateStatus = useCallback((id: string, status: IssueStatus) => {
-    updateStoredIssue(id, { status });
-  }, []);
+  const updateStatus = useCallback(
+    (id: string, status: IssueStatus) => updateIssue(id, { status }),
+    [updateIssue],
+  );
 
-  const updateIssue = useCallback((id: string, updates: IssueUpdates) => {
-    updateStoredIssue(id, updates);
-  }, []);
+  const addComment = useCallback(
+    async (issueId: string, body: string) => {
+      setError(null);
 
-  const addComment = useCallback((issueId: string, body: string) => {
-    const comment: IssueComment = {
-      id: `comment-${Date.now()}`,
-      body: body.trim(),
-      author: CURRENT_USER,
-      createdAt: new Date().toISOString(),
-    };
-    const activity = createActivity(
-      "COMMENT_ADDED",
-      "commented on the issue",
-    );
-
-    saveIssues(
-      getClientIssues().map((issue) =>
-        issue.id === issueId
-          ? {
-              ...issue,
-              comments: [...(issue.comments ?? []), comment],
-              activity: [...(issue.activity ?? []), activity],
-            }
-          : issue,
-      ),
-    );
-
-    return comment;
-  }, []);
-
-  const resetDemo = useCallback(() => saveIssues(DEMO_ISSUES), []);
+      try {
+        const issue = await apiRequest<Issue>(
+          `/api/issues/${encodeURIComponent(issueId)}/comments`,
+          {
+            method: "POST",
+            body: JSON.stringify({ body }),
+          },
+        );
+        replaceIssue(issue);
+        return true;
+      } catch (requestError) {
+        setError(messageFrom(requestError, "Comment could not be added"));
+        return false;
+      }
+    },
+    [replaceIssue],
+  );
 
   const value = useMemo(
     () => ({
       issues,
+      isLoading,
       createIssue,
       updateStatus,
       updateIssue,
       addComment,
-      resetDemo,
+      refreshIssues,
     }),
-    [issues, createIssue, updateStatus, updateIssue, addComment, resetDemo],
+    [
+      issues,
+      isLoading,
+      createIssue,
+      updateStatus,
+      updateIssue,
+      addComment,
+      refreshIssues,
+    ],
   );
 
   return (
-    <IssueContext.Provider value={value}>{children}</IssueContext.Provider>
+    <IssueContext.Provider value={value}>
+      {children}
+      {error && (
+        <div className="sync-error" role="alert">
+          <span>
+            <strong>Workspace not synced</strong>
+            {error}
+          </span>
+          <button type="button" onClick={() => setError(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
+    </IssueContext.Provider>
   );
 }
 

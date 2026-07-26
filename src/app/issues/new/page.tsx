@@ -26,9 +26,12 @@ export default function NewIssuePage() {
   const [kind, setKind] = useState<IssueKind>("BUG");
   const [assignee, setAssignee] = useState("Unassigned");
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitError(null);
 
     const nextErrors: FormErrors = {};
     if (title.trim().length < 4) {
@@ -44,14 +47,23 @@ export default function NewIssuePage() {
       return;
     }
 
-    createIssue({
-      title: title.trim(),
-      description: description.trim(),
-      priority,
-      kind,
-      assignee,
-    });
-    router.push("/issues");
+    setIsSubmitting(true);
+
+    try {
+      const issue = await createIssue({
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        kind,
+        assignee,
+      });
+      router.push(`/issues/${issue.id}`);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Issue could not be created",
+      );
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -190,12 +202,22 @@ export default function NewIssuePage() {
           </div>
 
           <div className="form-actions">
+            {submitError && (
+              <p className="form-submit-error" role="alert">
+                <CircleAlert size={14} aria-hidden="true" />
+                {submitError}
+              </p>
+            )}
             <Link className="secondary-button" href="/issues">
               Cancel
             </Link>
-            <button className="primary-button" type="submit">
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={isSubmitting}
+            >
               <Check size={16} aria-hidden="true" />
-              Create issue
+              {isSubmitting ? "Creating..." : "Create issue"}
             </button>
           </div>
         </form>
