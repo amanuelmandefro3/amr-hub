@@ -6,12 +6,20 @@ import {
   listSavedViews,
 } from "../../../server/savedViews";
 import { UnknownLabelError } from "../../../server/issues";
+import {
+  actorFromSession,
+  getRequestSession,
+  unauthorizedResponse,
+} from "../../../server/session";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const session = await getRequestSession(request);
+  if (!session) return unauthorizedResponse();
+
   try {
-    return NextResponse.json(await listSavedViews());
+    return NextResponse.json(await listSavedViews(session.user.id));
   } catch (error) {
     console.error("Failed to load saved views", error);
     return NextResponse.json(
@@ -22,6 +30,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await getRequestSession(request);
+  if (!session) return unauthorizedResponse();
+
   try {
     const validation = savedViewSchema.safeParse(await request.json());
 
@@ -35,9 +46,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(await createSavedView(validation.data), {
-      status: 201,
-    });
+    return NextResponse.json(
+      await createSavedView(validation.data, actorFromSession(session)),
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof SyntaxError) {
       return NextResponse.json(

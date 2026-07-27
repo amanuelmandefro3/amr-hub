@@ -20,6 +20,8 @@ jobs:
       DATABASE_URL: "postgresql://amr_hub:amr_hub_ci@localhost:5432/amr_hub?schema=public"
       DIRECT_URL: "postgresql://amr_hub:amr_hub_ci@localhost:5432/amr_hub?schema=public"
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      BETTER_AUTH_SECRET: "ci-only-authentication-secret-at-least-32-characters"
+      AUTH_BOOTSTRAP_TOKEN: "ci-only-owner-bootstrap-token-at-least-32-characters"
     services:
       postgres:
         image: postgres:16-alpine

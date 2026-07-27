@@ -5,12 +5,20 @@ import {
   UnknownLabelError,
   updateIssue,
 } from "../../../../server/issues";
+import {
+  actorFromSession,
+  getRequestSession,
+  unauthorizedResponse,
+} from "../../../../server/session";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const session = await getRequestSession(request);
+  if (!session) return unauthorizedResponse();
+
   try {
     const validation = updateIssueSchema.safeParse(await request.json());
 
@@ -25,7 +33,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const { id } = await context.params;
-    const issue = await updateIssue(id, validation.data);
+    const issue = await updateIssue(
+      id,
+      validation.data,
+      actorFromSession(session),
+    );
 
     if (!issue) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });

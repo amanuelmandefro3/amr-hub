@@ -21,6 +21,10 @@ server API backed by PostgreSQL.
 - Responsive desktop and mobile navigation
 - Keyboard shortcut: press `C` outside a form field to create an issue
 - Durable server persistence across browsers and page reloads
+- Closed-workspace email and password authentication
+- Database-backed, revocable sessions with protected pages and APIs
+- One-time owner setup and personal saved-view ownership
+- Account security controls for password changes and device sign-out
 - Database-aware readiness endpoint for deployment health checks
 - Automated validation and planning tests with a migration-aware CI pipeline
 - Branded Open Graph and social-sharing preview
@@ -37,7 +41,9 @@ npm run dev
 ```
 
 The repository includes an isolated PostgreSQL 16 service for local
-development. The first API request seeds the sample workspace only when the
+development. Open `/setup` once and use the owner setup token from `.env` to
+create the first account. Registration closes after that owner exists. The
+first authenticated workspace request seeds the sample data only when the
 database is empty.
 
 Open the local URL printed by Next.js. Production checks:
@@ -55,6 +61,8 @@ npm audit --omit=dev
 - Tailwind/PostCSS build pipeline with a custom operational design system
 - Lucide icons
 - Zod request validation
+- Better Auth with scrypt password hashing and database-backed sessions
+- Database-backed authentication rate limits and a server-owned workspace role
 - Prisma and PostgreSQL with separate pooled runtime and direct migration
   connections
 - Relational workspace labels and indexed issue planning metadata
@@ -76,12 +84,11 @@ steps are documented in [the deployment runbook](docs/DEPLOYMENT.md).
 
 The next production milestones build on the durable server data:
 
-1. Authentication, organizations, and membership roles
-2. Attachments, custom fields, and richer planning metadata
-3. Backlog triage, cycle automation, workload forecasting, and dependencies
-4. Notifications plus GitHub, Slack, and error-monitoring integrations
-5. Browser-level accessibility tests, observability, rate limiting, and
-   automated incident response
+1. Organizations, invitations, and membership roles
+2. Passkeys, email verification, recovery, and optional two-factor authentication
+3. Attachments, custom fields, and richer planning metadata
+4. Backlog triage, cycle automation, workload forecasting, and dependencies
+5. Notifications, observability, browser accessibility tests, and integrations
 
 This scope follows the strongest patterns in established trackers: issues need
 clear ownership, priority, workflow state, and optional planning properties

@@ -1,0 +1,27 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import { IssueProvider } from "./IssueProvider";
+import NavBar from "./NavBar";
+
+const AUTH_ROUTES = ["/login", "/setup"];
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAuthRoute = AUTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+
+  if (isAuthRoute) {
+    return <main className="auth-content">{children}</main>;
+  }
+
+  return (
+    <IssueProvider>
+      <div className="app-shell">
+        <NavBar />
+        <main className="app-content">{children}</main>
+      </div>
+    </IssueProvider>
+  );
+}

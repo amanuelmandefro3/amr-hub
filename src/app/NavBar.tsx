@@ -7,8 +7,11 @@ import {
   CalendarRange,
   LayoutDashboard,
   ListTodo,
+  LogOut,
   Plus,
+  UserRound,
 } from "lucide-react";
+import { authClient } from "../lib/auth-client";
 
 const links = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
@@ -19,6 +22,7 @@ const links = [
 export default function NavBar() {
   const currentPath = usePathname();
   const router = useRouter();
+  const { data: session } = authClient.useSession();
 
   useEffect(() => {
     const openCreateIssue = (event: KeyboardEvent) => {
@@ -41,6 +45,20 @@ export default function NavBar() {
 
   const isActive = (href: string) =>
     href === "/" ? currentPath === href : currentPath.startsWith(href);
+
+  const userName = session?.user.name ?? "Workspace member";
+  const initials = userName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const signOut = async () => {
+    await authClient.signOut();
+    router.replace("/login");
+    router.refresh();
+  };
 
   return (
     <>
@@ -76,12 +94,24 @@ export default function NavBar() {
         <div className="sidebar-spacer" />
 
         <div className="user-row">
-          <span className="avatar avatar-green">AR</span>
-          <span>
-            <strong>Amanuel R.</strong>
-            <small>Workspace admin</small>
-          </span>
-          <span className="online-dot" title="Online" />
+          <span className="avatar avatar-green">{initials || "AR"}</span>
+          <Link className="user-identity" href="/account">
+            <strong>{userName}</strong>
+            <small>
+              {session?.user.role === "OWNER"
+                ? "Workspace owner"
+                : "Workspace member"}
+            </small>
+          </Link>
+          <button
+            className="sidebar-signout"
+            type="button"
+            onClick={() => void signOut()}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut size={15} aria-hidden="true" />
+          </button>
         </div>
       </aside>
 
@@ -107,6 +137,17 @@ export default function NavBar() {
             aria-label="Create issue"
           >
             <Plus size={19} aria-hidden="true" />
+          </Link>
+          <Link
+            href="/account"
+            className={
+              isActive("/account")
+                ? "mobile-nav-link active"
+                : "mobile-nav-link"
+            }
+            aria-label="Account security"
+          >
+            <UserRound size={19} aria-hidden="true" />
           </Link>
         </nav>
       </header>

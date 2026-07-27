@@ -56,9 +56,10 @@ export type SavedView = {
   assignee: string;
   sort: SavedViewSort;
   labelId: string | null;
+  isSystem: boolean;
 };
 
-export type SavedViewInput = Omit<SavedView, "id" | "owner">;
+export type SavedViewInput = Omit<SavedView, "id" | "owner" | "isSystem">;
 
 export type Cycle = {
   id: string;

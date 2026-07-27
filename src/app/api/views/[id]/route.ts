@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import { deleteSavedView } from "../../../../server/savedViews";
+import {
+  getRequestSession,
+  unauthorizedResponse,
+} from "../../../../server/session";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function DELETE(_: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
+  const session = await getRequestSession(request);
+  if (!session) return unauthorizedResponse();
+
   try {
     const { id } = await context.params;
 
-    if (!(await deleteSavedView(id))) {
+    if (!(await deleteSavedView(id, session.user.id))) {
       return NextResponse.json(
         { error: "Saved view not found" },
         { status: 404 },

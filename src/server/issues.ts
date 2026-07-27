@@ -7,7 +7,6 @@ import {
   STATUS_LABELS,
   WORKSPACE_LABELS,
   type Issue,
-  type IssueActivity,
   type IssueActivityType,
   type IssueKind,
   type IssuePriority,
@@ -17,7 +16,10 @@ import {
   type WorkspaceLabel,
 } from "../app/data/issues";
 
-export const CURRENT_USER = "Amanuel R.";
+export type WorkspaceActor = {
+  id: string;
+  name: string;
+};
 
 const issueInclude = {
   comments: {
@@ -175,7 +177,10 @@ export async function listIssues() {
   return issues.map(serializeIssue);
 }
 
-export async function createIssue(input: NewIssueInput) {
+export async function createIssue(
+  input: NewIssueInput,
+  actor: WorkspaceActor,
+) {
   await ensureWorkspaceLabels();
   await validateLabelIds(input.labelIds);
   await validateCycleId(input.cycleId);
@@ -195,6 +200,14 @@ export async function createIssue(input: NewIssueInput) {
         sequence,
         status: "OPEN",
         dueDate: dueDate ? parseDueDate(dueDate) : null,
+        activity: {
+          create: {
+            type: "CREATED",
+            description: "created the issue",
+            actor: actor.name,
+            user: { connect: { id: actor.id } },
+          },
+        },
         labels: {
           create: labelIds.map((labelId) => ({
             label: { connect: { id: labelId } },
@@ -271,8 +284,9 @@ function buildActivity(
   current: StoredIssue,
   updates: IssueUpdates,
   nextCycleName: string | null,
+  actor: WorkspaceActor,
 ): Prisma.ActivityCreateWithoutIssueInput[] {
-  const events: Omit<IssueActivity, "id" | "createdAt">[] = [];
+  const events: Prisma.ActivityCreateWithoutIssueInput[] = [];
 
   if (updates.status && updates.status !== current.status) {
     events.push({
@@ -280,7 +294,8 @@ function buildActivity(
       description: `changed status from ${
         STATUS_LABELS[current.status as IssueStatus]
       } to ${STATUS_LABELS[updates.status]}`,
-      actor: CURRENT_USER,
+      actor: actor.name,
+      user: { connect: { id: actor.id } },
     });
   }
 
@@ -290,7 +305,8 @@ function buildActivity(
       description: `changed priority from ${
         PRIORITY_LABELS[current.priority as IssuePriority]
       } to ${PRIORITY_LABELS[updates.priority]}`,
-      actor: CURRENT_USER,
+      actor: actor.name,
+      user: { connect: { id: actor.id } },
     });
   }
 
@@ -301,7 +317,8 @@ function buildActivity(
         updates.assignee === "Unassigned"
           ? "removed the assignee"
           : `assigned the issue to ${updates.assignee}`,
-      actor: CURRENT_USER,
+      actor: actor.name,
+      user: { connect: { id: actor.id } },
     });
   }
 
@@ -311,7 +328,8 @@ function buildActivity(
       description: `changed type from ${
         KIND_LABELS[current.kind as IssueKind]
       } to ${KIND_LABELS[updates.kind]}`,
-      actor: CURRENT_USER,
+      actor: actor.name,
+      user: { connect: { id: actor.id } },
     });
   }
 
@@ -325,7 +343,8 @@ function buildActivity(
     events.push({
       type: "CONTENT_UPDATED",
       description: "updated issue details",
-      actor: CURRENT_USER,
+      actor: actor.name,
+      user: { connect: { id: actor.id } },
     });
   }
 
@@ -338,7 +357,8 @@ function buildActivity(
       description: updates.dueDate
         ? `set the due date to ${formatDueDate(updates.dueDate)}`
         : "removed the due date",
-      actor: CURRENT_USER,
+      actor: actor.name,
+      user: { connect: { id: actor.id } },
     });
   }
 
@@ -350,7 +370,8 @@ function buildActivity(
       events.push({
         type: "LABELS_CHANGED",
         description: "updated issue labels",
-        actor: CURRENT_USER,
+        actor: actor.name,
+        user: { connect: { id: actor.id } },
       });
     }
   }
@@ -366,7 +387,8 @@ function buildActivity(
             updates.estimate === 1 ? "point" : "points"
           }`
         : "removed the estimate",
-      actor: CURRENT_USER,
+      actor: actor.name,
+      user: { connect: { id: actor.id } },
     });
   }
 
@@ -381,14 +403,19 @@ function buildActivity(
         : current.cycle
           ? `removed the issue from ${current.cycle.name}`
           : "removed the issue from its cycle",
-      actor: CURRENT_USER,
+      actor: actor.name,
+      user: { connect: { id: actor.id } },
     });
   }
 
   return events;
 }
 
-export async function updateIssue(id: string, updates: IssueUpdates) {
+export async function updateIssue(
+  id: string,
+  updates: IssueUpdates,
+  actor: WorkspaceActor,
+) {
   if (updates.labelIds) {
     await ensureWorkspaceLabels();
     await validateLabelIds(updates.labelIds);
@@ -403,7 +430,7 @@ export async function updateIssue(id: string, updates: IssueUpdates) {
 
     if (!current) return null;
 
-    const activity = buildActivity(current, updates, nextCycleName);
+    const activity = buildActivity(current, updates, nextCycleName, actor);
     const changed = activity.length > 0;
     if (!changed) return current;
     const { dueDate, labelIds, ...fields } = updates;
@@ -436,7 +463,11 @@ export async function updateIssue(id: string, updates: IssueUpdates) {
   return issue ? serializeIssue(issue) : null;
 }
 
-export async function addComment(id: string, body: string) {
+export async function addComment(
+  id: string,
+  body: string,
+  actor: WorkspaceActor,
+) {
   const exists = await prisma.issue.count({ where: { id } });
   if (!exists) return null;
 
@@ -446,14 +477,16 @@ export async function addComment(id: string, body: string) {
       comments: {
         create: {
           body,
-          author: CURRENT_USER,
+          author: actor.name,
+          user: { connect: { id: actor.id } },
         },
       },
       activity: {
         create: {
           type: "COMMENT_ADDED",
           description: "commented on the issue",
-          actor: CURRENT_USER,
+          actor: actor.name,
+          user: { connect: { id: actor.id } },
         },
       },
     },

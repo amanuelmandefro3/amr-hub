@@ -16,10 +16,28 @@ const postgresUrlSchema = z
     { message: "must be a PostgreSQL connection URL" },
   );
 
+const httpUrlSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine(
+    (value) => {
+      try {
+        const protocol = new URL(value).protocol;
+        return protocol === "https:" || protocol === "http:";
+      } catch {
+        return false;
+      }
+    },
+    { message: "must be an HTTP or HTTPS URL" },
+  );
+
 export const serverEnvironmentSchema = z.object({
   DATABASE_URL: postgresUrlSchema,
   DIRECT_URL: postgresUrlSchema,
-  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  NEXT_PUBLIC_APP_URL: httpUrlSchema.optional(),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  AUTH_BOOTSTRAP_TOKEN: z.string().min(32),
 });
 
 export function loadServerEnvironment(

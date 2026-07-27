@@ -139,6 +139,9 @@ export default function IssuesPage() {
   ]);
 
   const markViewModified = () => setSelectedViewId("");
+  const selectedView = savedViews.find(
+    (view) => view.id === selectedViewId,
+  );
 
   const applySavedView = (id: string) => {
     const view = savedViews.find((candidate) => candidate.id === id);
@@ -237,7 +240,7 @@ export default function IssuesPage() {
           <BookmarkPlus size={15} aria-hidden="true" />
           Save view
         </button>
-        {selectedViewId && (
+        {selectedViewId && !selectedView?.isSystem && (
           <button
             className="icon-button danger"
             type="button"

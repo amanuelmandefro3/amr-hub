@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import NavBar from "./NavBar";
-import { IssueProvider } from "./IssueProvider";
+import { AppShell } from "./AppShell";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -42,12 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <IssueProvider>
-          <div className="app-shell">
-            <NavBar />
-            <main className="app-content">{children}</main>
-          </div>
-        </IssueProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

@@ -50,6 +50,11 @@ async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
   });
   const payload: unknown = await response.json().catch(() => ({}));
 
+  if (response.status === 401 && typeof window !== "undefined") {
+    window.location.assign("/login");
+    throw new Error("Your session has expired");
+  }
+
   if (!response.ok) {
     const responseError =
       typeof payload === "object" &&

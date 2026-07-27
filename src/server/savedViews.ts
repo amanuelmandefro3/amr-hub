@@ -7,7 +7,7 @@ import {
   type SavedViewSort,
   type SavedViewStatus,
 } from "../app/data/issues";
-import { CURRENT_USER, UnknownLabelError } from "./issues";
+import { UnknownLabelError, type WorkspaceActor } from "./issues";
 
 function serializeSavedView(view: {
   id: string;
@@ -19,24 +19,37 @@ function serializeSavedView(view: {
   assignee: string;
   sort: string;
   labelId: string | null;
+  userId: string | null;
 }): SavedView {
   return {
-    ...view,
+    id: view.id,
+    name: view.name,
+    owner: view.owner,
+    query: view.query,
     status: view.status as SavedViewStatus,
     priority: view.priority as SavedViewPriority,
+    assignee: view.assignee,
     sort: view.sort as SavedViewSort,
+    labelId: view.labelId,
+    isSystem: view.userId === null,
   };
 }
 
-export async function listSavedViews() {
+export async function listSavedViews(userId: string) {
   const views = await prisma.savedView.findMany({
+    where: {
+      OR: [{ userId }, { userId: null }],
+    },
     orderBy: [{ owner: "asc" }, { name: "asc" }],
   });
 
   return views.map(serializeSavedView);
 }
 
-export async function createSavedView(input: SavedViewInput) {
+export async function createSavedView(
+  input: SavedViewInput,
+  actor: WorkspaceActor,
+) {
   if (input.labelId) {
     const labelExists = await prisma.label.count({
       where: { id: input.labelId },
@@ -48,7 +61,8 @@ export async function createSavedView(input: SavedViewInput) {
     const view = await prisma.savedView.create({
       data: {
         ...input,
-        owner: CURRENT_USER,
+        owner: actor.name,
+        userId: actor.id,
       },
     });
     return serializeSavedView(view);
@@ -63,19 +77,12 @@ export async function createSavedView(input: SavedViewInput) {
   }
 }
 
-export async function deleteSavedView(id: string) {
-  try {
-    await prisma.savedView.delete({ where: { id } });
-    return true;
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
-    ) {
-      return false;
-    }
-    throw error;
-  }
+export async function deleteSavedView(id: string, userId: string) {
+  const result = await prisma.savedView.deleteMany({
+    where: { id, userId },
+  });
+
+  return result.count === 1;
 }
 
 export class DuplicateSavedViewError extends Error {

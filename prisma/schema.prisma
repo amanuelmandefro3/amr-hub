@@ -55,11 +55,14 @@ model Comment {
   id        String   @id @default(cuid())
   body      String
   author    String
+  authorId  String?
   createdAt DateTime @default(now())
   issueId   String
   issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([issueId, createdAt])
+  @@index([authorId])
 }
 
 model Activity {
@@ -67,17 +70,21 @@ model Activity {
   type        String
   description String
   actor       String
+  actorId     String?
   createdAt   DateTime @default(now())
   issueId     String
   issue       Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([issueId, createdAt])
+  @@index([actorId])
 }
 
 model SavedView {
   id        String   @id @default(cuid())
-  name      String   @unique
-  owner     String   @default("Amanuel R.")
+  name      String
+  owner     String
+  userId    String?
   query     String   @default("")
   status    String   @default("ALL")
   priority  String   @default("ALL")
@@ -85,11 +92,14 @@ model SavedView {
   sort      String   @default("NEWEST")
   labelId   String?
   label     Label?   @relation(fields: [labelId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([userId, name])
   @@index([owner])
   @@index([labelId])
+  @@index([userId])
 }
 
 model Cycle {
@@ -102,4 +112,78 @@ model Cycle {
   issues    Issue[]
 
   @@index([startDate, endDate])
+}
+
+model User {
+  id            String      @id
+  name          String
+  email         String      @unique
+  emailVerified Boolean     @default(false)
+  image         String?
+  role          String      @default("OWNER")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  comments      Comment[]
+  activity      Activity[]
+  savedViews    SavedView[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
 }
