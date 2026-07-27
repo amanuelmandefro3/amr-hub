@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "SavedView" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "owner" TEXT NOT NULL DEFAULT 'Amanuel R.',
     "query" TEXT NOT NULL DEFAULT '',
@@ -9,10 +9,13 @@ CREATE TABLE "SavedView" (
     "assignee" TEXT NOT NULL DEFAULT 'ALL',
     "sort" TEXT NOT NULL DEFAULT 'NEWEST',
     "labelId" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "SavedView_labelId_fkey" FOREIGN KEY ("labelId") REFERENCES "Label" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "SavedView_pkey" PRIMARY KEY ("id")
 );
+
+-- AddForeignKey
+ALTER TABLE "SavedView" ADD CONSTRAINT "SavedView_labelId_fkey" FOREIGN KEY ("labelId") REFERENCES "Label"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SavedView_name_key" ON "SavedView"("name");
@@ -28,4 +31,5 @@ INSERT INTO "SavedView" (
     "id", "name", "owner", "query", "status", "priority", "assignee", "sort", "labelId", "updatedAt"
 ) VALUES
     ('view-urgent', 'Urgent active work', 'Amanuel R.', '', 'ACTIVE', 'URGENT', 'ALL', 'NEWEST', NULL, CURRENT_TIMESTAMP),
-    ('view-customer', 'Customer impact', 'Amanuel R.', '', 'ACTIVE', 'ALL', 'ALL', 'NEWEST', 'label-customer', CURRENT_TIMESTAMP);
+    ('view-customer', 'Customer impact', 'Amanuel R.', '', 'ACTIVE', 'ALL', 'ALL', 'NEWEST', 'label-customer', CURRENT_TIMESTAMP)
+ON CONFLICT ("id") DO NOTHING;

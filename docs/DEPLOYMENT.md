@@ -1,0 +1,102 @@
+# AMR Hub deployment runbook
+
+AMR Hub runs as a Next.js Node.js application backed by PostgreSQL 16 or newer.
+Use a managed PostgreSQL provider with connection pooling for production.
+
+## Required environment
+
+Configure these values in the hosting platform for production and preview
+environments:
+
+```bash
+DATABASE_URL="postgresql://USER:PASSWORD@POOLED_HOST:5432/amr_hub?sslmode=require"
+DIRECT_URL="postgresql://USER:PASSWORD@DIRECT_HOST:5432/amr_hub?sslmode=require"
+NEXT_PUBLIC_APP_URL="https://your-production-domain.example"
+```
+
+- `DATABASE_URL` is the pooled connection used by application requests.
+- `DIRECT_URL` bypasses the pooler for migrations and administrative commands.
+- Never commit either production database URL.
+
+Prisma documents the pooled and direct connection split in its
+[database connection guide](https://www.prisma.io/docs/postgres/database/connecting-to-your-database).
+
+## Local PostgreSQL
+
+```bash
+cp .env.example .env
+npm install
+npm run db:setup
+npm run dev
+```
+
+The database listens on port `55433` to avoid common local PostgreSQL ports.
+Use `npm run db:down` to stop the service without deleting its named volume.
+
+## First production release
+
+1. Provision managed PostgreSQL and record its pooled and direct URLs.
+2. Add the three required environment variables to the hosting platform.
+3. Apply the committed schema with the direct connection:
+
+```bash
+npm ci
+npm run db:migrate
+```
+
+4. Deploy the application:
+
+```bash
+npx vercel deploy --prod
+```
+
+5. Confirm `GET /api/health` returns HTTP `200` with `"status": "ok"`.
+6. Open the workspace and confirm the eight demo issues, three cycles, and two
+   saved views were initialized.
+
+`prisma migrate deploy` applies pending migrations without resetting existing
+data. Run it before promoting application code that depends on a new schema.
+
+## Release verification
+
+Run these checks before every production release:
+
+```bash
+npm ci
+npm run lint
+npm run test:run
+npm run build
+npm audit --omit=dev
+```
+
+After deployment, verify:
+
+- `/api/health` reports a reachable database.
+- `/`, `/issues`, and `/cycles` return HTTP `200`.
+- Creating and editing an issue persists after a page reload.
+- Hosting logs contain no Prisma connection or migration errors.
+
+## Backups and recovery
+
+Enable automated provider backups with at least seven days of retention. Before
+a destructive or high-risk migration, also take an explicit backup:
+
+```bash
+pg_dump --format=custom --file=amr-hub.backup "$DIRECT_URL"
+```
+
+Test restores in a separate database:
+
+```bash
+pg_restore --clean --if-exists --no-owner --dbname="$RESTORE_URL" amr-hub.backup
+```
+
+Never test a restore against the production database.
+
+## Rollback
+
+1. Roll back the application to the last known-good hosting deployment.
+2. Prefer a forward-fix migration for additive schema problems.
+3. Restore a database backup only when data corruption or destructive migration
+   makes a forward fix impossible.
+4. Re-run `/api/health` and the release verification checks.

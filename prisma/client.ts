@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import { loadServerEnvironment } from "../src/server/env";
 
 const prismaClientSingleton = () => {
+  loadServerEnvironment();
   return new PrismaClient();
 };
 

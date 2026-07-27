@@ -17,8 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      DATABASE_URL: "file:./ci.db"
+      DATABASE_URL: "postgresql://amr_hub:amr_hub_ci@localhost:5432/amr_hub?schema=public"
+      DIRECT_URL: "postgresql://amr_hub:amr_hub_ci@localhost:5432/amr_hub?schema=public"
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: amr_hub
+          POSTGRES_USER: amr_hub
+          POSTGRES_PASSWORD: amr_hub_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U amr_hub -d amr_hub"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 10
 
     steps:
       - name: Check out repository
