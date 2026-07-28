@@ -3601,6 +3601,235 @@ h2 {
   flex-shrink: 0;
 }
 
+/* Enhanced Auth Styles */
+.auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--gray-600);
+  font-size: 13px;
+  font-weight: 550;
+  transition: all 200ms ease;
+  text-decoration: none;
+}
+
+.auth-back:hover {
+  color: var(--gray-900);
+  background: var(--gray-100);
+  transform: translateX(-2px);
+}
+
+.auth-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(216, 81, 77, 0.08) 0%, rgba(216, 81, 77, 0.04) 100%);
+  border: 1px solid rgba(216, 81, 77, 0.2);
+  color: var(--red-600);
+  font-size: 13px;
+  margin-top: 12px;
+  animation: slideDown 300ms ease;
+}
+
+.auth-error-full {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.error-icon,
+.success-icon {
+  display: flex;
+  width: 64px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(42, 138, 91, 0.1) 0%, rgba(42, 138, 91, 0.05) 100%);
+  color: var(--green-600);
+}
+
+.error-icon {
+  background: linear-gradient(135deg, rgba(216, 81, 77, 0.1) 0%, rgba(216, 81, 77, 0.05) 100%);
+  color: var(--red-600);
+}
+
+.auth-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.auth-success h1 {
+  margin: 0;
+}
+
+.password-input-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.password-input-wrapper input {
+  padding-right: 40px;
+}
+
+.password-toggle,
+.password-check {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--gray-400);
+  transition: all 150ms ease;
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: var(--gray-600);
+}
+
+.password-check {
+  color: var(--green-600);
+  cursor: auto;
+}
+
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.strength-bars {
+  display: flex;
+  gap: 3px;
+}
+
+.strength-bar {
+  width: 8px;
+  height: 4px;
+  border-radius: 2px;
+  transition: all 200ms ease;
+}
+
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  margin: -8px;
+  color: var(--gray-700);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.form-checkbox input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--green-600);
+}
+
+.form-checkbox:hover {
+  color: var(--gray-900);
+}
+
+.auth-link {
+  color: var(--green-600);
+  font-weight: 550;
+  text-decoration: none;
+  transition: all 150ms ease;
+  border-bottom: 1px solid transparent;
+}
+
+.auth-link:hover {
+  color: var(--green-700);
+  border-bottom-color: var(--green-600);
+}
+
+.auth-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--gray-200);
+  text-align: center;
+  font-size: 13px;
+  color: var(--gray-600);
+}
+
+.auth-footer p {
+  margin: 0;
+}
+
+.invite-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(42, 138, 91, 0.05) 0%, rgba(42, 138, 91, 0.02) 100%);
+  border: 1px solid rgba(42, 138, 91, 0.15);
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+.invite-details p {
+  margin: 0;
+  color: var(--gray-700);
+}
+
+.invite-details strong {
+  color: var(--gray-900);
+}
+
+.invite-email {
+  color: var(--green-600);
+  font-weight: 550;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(42, 138, 91, 0.15);
+  color: var(--green-700);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

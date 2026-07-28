@@ -154,11 +154,22 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {setupAvailable && (
-            <p className="auth-setup-link">
-              New workspace? <Link href="/setup">Create the owner account</Link>
+          <div className="auth-footer">
+            <p>
+              Don&apos;t have an account?{" "}
+              <Link href="/signup" className="auth-link">
+                Create one now
+              </Link>
             </p>
-          )}
+            {setupAvailable && (
+              <p style={{ marginTop: "8px", fontSize: "12px", color: "var(--gray-500)" }}>
+                or{" "}
+                <Link href="/setup" className="auth-link">
+                  set up a new workspace
+                </Link>
+              </p>
+            )}
+          </div>
         </div>
       </section>
 
