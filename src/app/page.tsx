@@ -13,6 +13,10 @@ import {
 import { useIssues } from "./IssueProvider";
 import { IssueVisualRow } from "./components/IssueVisualRow";
 import { WorkspaceLoading } from "./components/WorkspaceLoading";
+import { MetricCard } from "./components/MetricCard";
+import { ThroughputChart } from "./components/ThroughputChart";
+import { PriorityRing } from "./components/PriorityRing";
+import { ActivityFeed } from "./components/ActivityFeed";
 import {
   findCurrentCycle,
   formatCycleDateRange,
@@ -152,45 +156,39 @@ export default function Home() {
       </header>
 
       <section className="metrics-grid" aria-label="Workspace summary">
-        <article className="metric-card">
-          <span className="metric-icon metric-icon-blue">
-            <Inbox size={18} aria-hidden="true" />
-          </span>
-          <span className="metric-label">Active issues</span>
-          <strong className="metric-value">{active}</strong>
-          <span className="metric-note">
-            <TrendingUp size={14} aria-hidden="true" />
-            {addedThisWeek} added this week
-          </span>
-        </article>
-        <article className="metric-card">
-          <span className="metric-icon metric-icon-amber">
-            <Clock3 size={18} aria-hidden="true" />
-          </span>
-          <span className="metric-label">In progress</span>
-          <strong className="metric-value">{inProgress}</strong>
-          <span className="metric-note neutral">
-            Across {activeOwners} {activeOwners === 1 ? "owner" : "owners"}
-          </span>
-        </article>
-        <article className="metric-card">
-          <span className="metric-icon metric-icon-green">
-            <CircleCheck size={18} aria-hidden="true" />
-          </span>
-          <span className="metric-label">Completion rate</span>
-          <strong className="metric-value">{completionRate}%</strong>
-          <span className="metric-note positive">
-            {completed} of {issues.length} issues
-          </span>
-        </article>
-        <article className="metric-card">
-          <span className="metric-icon metric-icon-red">
-            <Flame size={18} aria-hidden="true" />
-          </span>
-          <span className="metric-label">Urgent</span>
-          <strong className="metric-value">{urgent}</strong>
-          <span className="metric-note neutral">Needs attention today</span>
-        </article>
+        <MetricCard
+          icon={<Inbox size={18} aria-hidden="true" />}
+          label="Active issues"
+          value={active}
+          note={
+            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+              <TrendingUp size={14} aria-hidden="true" />
+              {addedThisWeek} added this week
+            </div>
+          }
+          variant="blue"
+        />
+        <MetricCard
+          icon={<Clock3 size={18} aria-hidden="true" />}
+          label="In progress"
+          value={inProgress}
+          note={`Across ${activeOwners} ${activeOwners === 1 ? "owner" : "owners"}`}
+          variant="amber"
+        />
+        <MetricCard
+          icon={<CircleCheck size={18} aria-hidden="true" />}
+          label="Completion rate"
+          value={`${completionRate}%`}
+          note={`${completed} of ${issues.length} issues`}
+          variant="green"
+        />
+        <MetricCard
+          icon={<Flame size={18} aria-hidden="true" />}
+          label="Urgent"
+          value={urgent}
+          note="Needs attention today"
+          variant="red"
+        />
       </section>
 
       <section className="dashboard-grid">
@@ -200,40 +198,8 @@ export default function Home() {
               <h2>Work pulse</h2>
               <p>Issues opened and completed over the last 7 days</p>
             </div>
-            <div className="chart-legend" aria-label="Chart legend">
-              <span><i className="legend-opened" />Opened</span>
-              <span><i className="legend-closed" />Completed</span>
-            </div>
           </div>
-          <div className="bar-chart" aria-label="Weekly issue throughput chart">
-            {throughput.map((point) => (
-              <div className="bar-group" key={point.day}>
-                <div className="bars">
-                  <span
-                    className="bar bar-opened"
-                    style={{
-                      height: `${Math.max(
-                        4,
-                        (point.opened / largestThroughput) * 84,
-                      )}px`,
-                    }}
-                    title={`${point.opened} opened`}
-                  />
-                  <span
-                    className="bar bar-closed"
-                    style={{
-                      height: `${Math.max(
-                        4,
-                        (point.closed / largestThroughput) * 84,
-                      )}px`,
-                    }}
-                    title={`${point.closed} completed`}
-                  />
-                </div>
-                <small>{point.day}</small>
-              </div>
-            ))}
-          </div>
+          <ThroughputChart data={throughput} />
         </article>
 
         <article className="panel cycle-panel">
@@ -303,18 +269,11 @@ export default function Home() {
         <article className="panel recent-panel">
           <div className="panel-header">
             <div>
-              <h2>Recent issues</h2>
-              <p>Latest activity across your workspace</p>
+              <h2>Latest activity</h2>
+              <p>Recent changes across your workspace</p>
             </div>
-            <Link className="text-link" href="/issues">
-              View all <ArrowRight size={15} aria-hidden="true" />
-            </Link>
           </div>
-          <div className="issue-rows">
-            {issues.slice(0, 5).map((issue) => (
-              <IssueVisualRow issue={issue} key={issue.id} compact />
-            ))}
-          </div>
+          <ActivityFeed issues={issues} maxItems={6} />
         </article>
 
         <article className="panel priority-panel">
@@ -324,30 +283,7 @@ export default function Home() {
               <p>All issues by priority</p>
             </div>
           </div>
-          <div className="priority-stack">
-            {priorityCounts.map((priority) => {
-              const percentage = Math.round(
-                (priority.value / Math.max(issues.length, 1)) * 100,
-              );
-              return (
-                <div className="priority-row" key={priority.label}>
-                  <span>
-                    <i style={{ background: priority.color }} />
-                    {priority.label}
-                  </span>
-                  <div className="priority-bar">
-                    <i
-                      style={{
-                        width: `${percentage}%`,
-                        background: priority.color,
-                      }}
-                    />
-                  </div>
-                  <strong>{priority.value}</strong>
-                </div>
-              );
-            })}
-          </div>
+          <PriorityRing data={priorityCounts} />
         </article>
       </section>
     </div>
