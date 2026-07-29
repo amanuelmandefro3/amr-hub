@@ -115,20 +115,22 @@ model Cycle {
 }
 
 model User {
-  id            String      @id
-  name          String
-  email         String      @unique
-  emailVerified Boolean     @default(false)
-  image         String?
-  role          String      @default("OWNER")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  comments      Comment[]
-  activity      Activity[]
-  savedViews    SavedView[]
-  invitations   Invitation[]
+  id               String       @id
+  name             String
+  email            String       @unique
+  emailVerified    Boolean      @default(false)
+  image            String?
+  role             String       @default("OWNER")
+  twoFactorEnabled Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  sessions         Session[]
+  accounts         Account[]
+  twoFactors       TwoFactor[]
+  comments         Comment[]
+  activity         Activity[]
+  savedViews       SavedView[]
+  invitations      Invitation[]
 
   @@map("user")
 }
@@ -182,6 +184,21 @@ model Account {
 
   @@index([userId])
   @@map("account")
+}
+
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
 }
 
 model Verification {

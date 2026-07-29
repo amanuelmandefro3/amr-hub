@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { twoFactor } from "better-auth/plugins";
 import prisma from "../../prisma/client";
 import { loadServerEnvironment } from "../server/env";
 
@@ -63,8 +64,32 @@ export const auth = betterAuth({
         window: 60,
         max: 3,
       },
+      "/two-factor/verify-totp": {
+        window: 60,
+        max: 6,
+      },
+      "/two-factor/verify-backup-code": {
+        window: 60,
+        max: 6,
+      },
     },
   },
+  plugins: [
+    twoFactor({
+      issuer: "AMR Hub",
+      twoFactorCookieMaxAge: 60 * 10,
+      trustDeviceMaxAge: 60 * 60 * 24 * 30,
+      backupCodeOptions: {
+        amount: 10,
+        length: 12,
+      },
+      accountLockout: {
+        enabled: true,
+        maxFailedAttempts: 5,
+        durationSeconds: 60 * 15,
+      },
+    }),
+  ],
   advanced: {
     useSecureCookies: process.env.NODE_ENV === "production",
   },

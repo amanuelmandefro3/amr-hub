@@ -58,6 +58,10 @@ export default function LoginPage() {
       return;
     }
 
+    if (result.data && "twoFactorRedirect" in result.data) {
+      return;
+    }
+
     router.replace("/");
     router.refresh();
   };

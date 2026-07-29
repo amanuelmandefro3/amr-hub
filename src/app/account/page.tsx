@@ -13,6 +13,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { authClient } from "../../lib/auth-client";
+import TwoFactorSettings from "../components/TwoFactorSettings";
 
 type WorkspaceAccess = {
   users: Array<{
@@ -33,7 +34,7 @@ type WorkspaceAccess = {
 };
 
 export default function AccountPage() {
-  const { data: session } = authClient.useSession();
+  const { data: session, refetch: refetchSession } = authClient.useSession();
   const [sessionCount, setSessionCount] = useState<number | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -298,6 +299,13 @@ export default function AccountPage() {
             </div>
           </form>
         </section>
+
+        <TwoFactorSettings
+          enabled={session?.user.twoFactorEnabled === true}
+          onStatusChange={async () => {
+            await refetchSession();
+          }}
+        />
 
         <section className="account-section">
           <header>
