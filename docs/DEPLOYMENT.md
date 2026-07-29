@@ -101,6 +101,8 @@ After deployment, verify:
   every account session and unused recovery code after a successful reset.
 - An owner can create and revoke a member invitation, and the revoked link is
   rejected without creating an account.
+- Removing a member immediately rejects their existing session and deletes
+  their credentials while retaining historical author names in workspace data.
 - Hosting logs contain no Prisma connection or migration errors.
 
 ## Backups and recovery

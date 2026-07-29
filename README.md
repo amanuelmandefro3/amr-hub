@@ -28,7 +28,7 @@ server API backed by PostgreSQL.
 - TOTP authenticator protection with one-time backup codes and trusted devices
 - Offline password recovery codes with global session invalidation
 - Owner-issued, expiring member invitations with one-time bearer links
-- Workspace access management with member and invitation visibility
+- Workspace access management with immediate member and invitation revocation
 - Database-aware readiness endpoint for deployment health checks
 - Automated validation and planning tests with a migration-aware CI pipeline
 - Branded Open Graph and social-sharing preview

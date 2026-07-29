@@ -49,6 +49,7 @@ export default function AccountPage() {
   const [isInviting, setIsInviting] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
   const refreshWorkspaceAccess = async () => {
     const response = await fetch("/api/invitations", { cache: "no-store" });
@@ -163,6 +164,34 @@ export default function AccountPage() {
     }
 
     setInviteStatus("Invitation revoked.");
+    await refreshWorkspaceAccess();
+  };
+
+  const removeMember = async (user: WorkspaceAccess["users"][number]) => {
+    if (
+      !window.confirm(
+        `Remove ${user.name} from this workspace? Every active session and credential for this account will be revoked.`,
+      )
+    ) {
+      return;
+    }
+
+    setRemovingMemberId(user.id);
+    setInviteStatus(null);
+    const response = await fetch(`/api/members/${user.id}`, {
+      method: "DELETE",
+    });
+    const result = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    setRemovingMemberId(null);
+
+    if (!response.ok) {
+      setInviteStatus(result?.error ?? "The member could not be removed.");
+      return;
+    }
+
+    setInviteStatus(`${user.name} no longer has workspace access.`);
     await refreshWorkspaceAccess();
   };
 
@@ -381,6 +410,26 @@ export default function AccountPage() {
                     <span className="team-role">
                       {user.role === "OWNER" ? "Owner" : "Member"}
                     </span>
+                    {user.role === "MEMBER" && (
+                      <button
+                        className="icon-button danger"
+                        type="button"
+                        onClick={() => void removeMember(user)}
+                        disabled={removingMemberId === user.id}
+                        aria-label={`Remove ${user.name} from the workspace`}
+                        title="Remove workspace access"
+                      >
+                        {removingMemberId === user.id ? (
+                          <LoaderCircle
+                            className="spinning-icon"
+                            size={15}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <Trash2 size={15} aria-hidden="true" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
