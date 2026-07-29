@@ -5,7 +5,8 @@ const publicRoutes = new Set(["/login", "/setup"]);
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isPublicRoute = publicRoutes.has(pathname);
+  const isPublicRoute =
+    publicRoutes.has(pathname) || pathname.startsWith("/invite/");
   const sessionCookie = getSessionCookie(request);
 
   if (!sessionCookie && !isPublicRoute) {

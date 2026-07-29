@@ -128,8 +128,25 @@ model User {
   comments      Comment[]
   activity      Activity[]
   savedViews    SavedView[]
+  invitations   Invitation[]
 
   @@map("user")
+}
+
+model Invitation {
+  id        String   @id
+  email     String
+  tokenHash String   @unique
+  status    String   @default("PENDING")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  invitedBy String
+  inviter   User     @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@index([email, status])
+  @@index([expiresAt])
+  @@map("invitation")
 }
 
 model Session {

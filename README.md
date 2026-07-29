@@ -25,6 +25,8 @@ server API backed by PostgreSQL.
 - Database-backed, revocable sessions with protected pages and APIs
 - One-time owner setup and personal saved-view ownership
 - Account security controls for password changes and device sign-out
+- Owner-issued, expiring member invitations with one-time bearer links
+- Workspace access management with member and invitation visibility
 - Database-aware readiness endpoint for deployment health checks
 - Automated validation and planning tests with a migration-aware CI pipeline
 - Branded Open Graph and social-sharing preview
@@ -63,6 +65,7 @@ npm audit --omit=dev
 - Zod request validation
 - Better Auth with scrypt password hashing and database-backed sessions
 - Database-backed authentication rate limits and a server-owned workspace role
+- Hashed invitation tokens and transactional member credential provisioning
 - Prisma and PostgreSQL with separate pooled runtime and direct migration
   connections
 - Relational workspace labels and indexed issue planning metadata
@@ -84,7 +87,7 @@ steps are documented in [the deployment runbook](docs/DEPLOYMENT.md).
 
 The next production milestones build on the durable server data:
 
-1. Organizations, invitations, and membership roles
+1. Organizations, multiple workspaces, and membership administration
 2. Passkeys, email verification, recovery, and optional two-factor authentication
 3. Attachments, custom fields, and richer planning metadata
 4. Backlog triage, cycle automation, workload forecasting, and dependencies

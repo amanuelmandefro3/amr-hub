@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { IssueProvider } from "./IssueProvider";
 import NavBar from "./NavBar";
 
-const AUTH_ROUTES = ["/login", "/setup"];
+const AUTH_ROUTES = ["/login", "/setup", "/invite"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

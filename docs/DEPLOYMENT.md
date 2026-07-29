@@ -94,6 +94,8 @@ After deployment, verify:
 - Unauthenticated workspace APIs return HTTP `401`.
 - Creating and editing an issue persists after a page reload.
 - Password changes revoke other sessions and sign-out invalidates API access.
+- An owner can create and revoke a member invitation, and the revoked link is
+  rejected without creating an account.
 - Hosting logs contain no Prisma connection or migration errors.
 
 ## Backups and recovery
