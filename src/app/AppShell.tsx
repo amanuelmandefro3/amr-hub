@@ -7,6 +7,8 @@ import NavBar from "./NavBar";
 const AUTH_ROUTES = [
   "/forgot-password",
   "/login",
+  "/onboarding",
+  "/signup",
   "/setup",
   "/invite",
   "/two-factor",

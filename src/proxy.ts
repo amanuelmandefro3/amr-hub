@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 const publicRoutes = new Set([
   "/forgot-password",
   "/login",
+  "/signup",
   "/setup",
   "/two-factor",
 ]);

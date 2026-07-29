@@ -19,7 +19,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [setupAvailable, setSetupAvailable] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,12 +28,6 @@ export default function LoginPage() {
       return;
     }
 
-    fetch("/api/setup/status", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((data: { setupAvailable?: boolean }) => {
-        setSetupAvailable(data.setupAvailable === true);
-      })
-      .catch(() => setSetupAvailable(false));
   }, [router, session]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -60,6 +53,19 @@ export default function LoginPage() {
 
     if (result.data && "twoFactorRedirect" in result.data) {
       return;
+    }
+
+    const organizations = await authClient.organization.list();
+
+    if (!organizations.error && organizations.data.length === 0) {
+      router.replace("/onboarding");
+      return;
+    }
+
+    if (!organizations.error && organizations.data[0]) {
+      await authClient.organization.setActive({
+        organizationId: organizations.data[0].id,
+      });
     }
 
     router.replace("/");
@@ -161,11 +167,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {setupAvailable && (
-            <p className="auth-setup-link">
-              New workspace? <Link href="/setup">Create the owner account</Link>
-            </p>
-          )}
+          <p className="auth-setup-link">
+            New to AMR Hub? <Link href="/signup">Create a workspace</Link>
+          </p>
         </div>
       </section>
 

@@ -8,7 +8,6 @@ const validEnvironment = {
     "postgresql://app:secret@db.example.com:5432/amr_hub?sslmode=require",
   NEXT_PUBLIC_APP_URL: "https://amr-hub.example.com",
   BETTER_AUTH_SECRET: "a".repeat(32),
-  AUTH_BOOTSTRAP_TOKEN: "b".repeat(32),
 };
 
 describe("loadServerEnvironment", () => {
@@ -21,7 +20,6 @@ describe("loadServerEnvironment", () => {
     ["a missing direct URL", { DIRECT_URL: undefined }],
     ["an invalid public origin", { NEXT_PUBLIC_APP_URL: "amr-hub" }],
     ["a short authentication secret", { BETTER_AUTH_SECRET: "short" }],
-    ["a missing bootstrap token", { AUTH_BOOTSTRAP_TOKEN: undefined }],
   ])("rejects %s", (_, change) => {
     expect(() =>
       loadServerEnvironment({ ...validEnvironment, ...change }),

@@ -2593,9 +2593,19 @@ h2 {
   width: min(100%, 390px);
 }
 
+.signup-form-wrap,
+.onboarding-form-wrap {
+  width: min(100%, 430px);
+}
+
 .auth-brand {
   width: max-content;
   margin-bottom: 72px;
+}
+
+.auth-back-link {
+  width: max-content;
+  margin-bottom: 48px;
 }
 
 .auth-heading {
@@ -2716,6 +2726,63 @@ h2 {
 .auth-setup-link a {
   color: var(--green-600);
   font-weight: 650;
+}
+
+.workspace-slug-input {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+  border-radius: 5px;
+  background: #fff;
+}
+
+.workspace-slug-input:focus-within {
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 3px var(--green-50);
+}
+
+.workspace-slug-input > span {
+  display: flex;
+  height: 38px;
+  align-items: center;
+  padding-left: 11px;
+  color: var(--gray-400);
+  background: var(--gray-50);
+  font-size: 11px;
+}
+
+.workspace-slug-input input {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.workspace-slug-input input:focus {
+  border: 0;
+  box-shadow: none;
+}
+
+.organization-key-input {
+  max-width: 112px;
+  font-family: var(--font-geist-mono), monospace;
+  font-weight: 700;
+}
+
+.field-status {
+  display: flex;
+  min-height: 16px;
+  align-items: center;
+  gap: 5px;
+  color: var(--gray-500);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.field-status.success {
+  color: var(--green-600);
 }
 
 .auth-method-tabs {
@@ -2888,6 +2955,102 @@ h2 {
 
 .preview-priority.medium {
   background: var(--blue-500);
+}
+
+.signup-preview-steps {
+  display: grid;
+  border-top: 1px solid var(--gray-700);
+}
+
+.signup-preview-steps > span {
+  display: grid;
+  min-height: 52px;
+  grid-template-columns: 25px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--gray-700);
+  color: var(--gray-400);
+  font-size: 11px;
+}
+
+.signup-preview-steps b,
+.signup-preview-steps svg {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid var(--gray-600);
+  border-radius: 50%;
+  font-size: 9px;
+  text-align: center;
+}
+
+.signup-preview-steps .active {
+  color: #fff;
+}
+
+.signup-preview-steps .active b {
+  border-color: var(--green-400);
+  color: var(--gray-900);
+  background: var(--green-300);
+}
+
+.signup-preview-steps .complete {
+  color: var(--green-200);
+}
+
+.signup-preview-steps .complete svg {
+  padding: 4px;
+  border-color: var(--green-500);
+}
+
+.organization-preview {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 50px 0 34px;
+}
+
+.organization-preview-mark {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--gray-900);
+  background: #fff;
+  font-size: 16px;
+  font-weight: 760;
+}
+
+.organization-preview div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.organization-preview p {
+  margin: 0;
+  color: var(--green-200);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.organization-preview strong {
+  overflow: hidden;
+  font-size: 23px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.organization-preview div > span {
+  overflow: hidden;
+  color: var(--gray-400);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .auth-loading {
@@ -3662,6 +3825,10 @@ h2 {
 
   .auth-brand {
     margin-bottom: 56px;
+  }
+
+  .auth-back-link {
+    margin-bottom: 40px;
   }
 
   .app-sidebar {

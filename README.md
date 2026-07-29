@@ -21,9 +21,10 @@ server API backed by PostgreSQL.
 - Responsive desktop and mobile navigation
 - Keyboard shortcut: press `C` outside a form field to create an issue
 - Durable server persistence across browsers and page reloads
-- Closed-workspace email and password authentication
+- Public account signup with required organization onboarding
 - Database-backed, revocable sessions with protected pages and APIs
-- One-time owner setup and personal saved-view ownership
+- Active organization membership and tenant-isolated workspace data
+- Organization-specific issue keys and personal saved-view ownership
 - Account security controls for password changes and per-device session sign-out
 - TOTP authenticator protection with one-time backup codes and trusted devices
 - Offline password recovery codes with global session invalidation
@@ -45,10 +46,9 @@ npm run dev
 ```
 
 The repository includes an isolated PostgreSQL 16 service for local
-development. Open `/setup` once and use the owner setup token from `.env` to
-create the first account. Registration closes after that owner exists. The
-first authenticated workspace request seeds the sample data only when the
-database is empty.
+development. Open `/signup` to create an account, then create the required
+organization workspace with a unique handle and issue key. New organizations
+start empty and cannot access another organization's issues or planning data.
 
 Open the local URL printed by Next.js. Production checks:
 
@@ -66,13 +66,14 @@ npm audit --omit=dev
 - Lucide icons
 - Zod request validation
 - Better Auth with scrypt password hashing and database-backed sessions
-- Database-backed authentication rate limits and a server-owned workspace role
+- Better Auth organizations with active membership and owner/member roles
+- Database-backed authentication rate limits and mandatory organization setup
 - Better Auth TOTP challenges with encrypted secrets and account lockout
 - Hashed password recovery codes protected by database-backed rate limits
 - Hashed invitation tokens and transactional member credential provisioning
 - Prisma and PostgreSQL with separate pooled runtime and direct migration
   connections
-- Relational workspace labels and indexed issue planning metadata
+- Organization-scoped labels, cycles, views, invitations, and issue metadata
 - REST endpoints for issue loading, creation, editing, discussion, labels, and
   saved views
 - Server-owned issue numbering and audit event generation
@@ -91,11 +92,10 @@ steps are documented in [the deployment runbook](docs/DEPLOYMENT.md).
 
 The next production milestones build on the durable server data:
 
-1. Organizations, multiple workspaces, and membership administration
-2. Passkeys, email verification, recovery, and optional two-factor authentication
-3. Attachments, custom fields, and richer planning metadata
-4. Backlog triage, cycle automation, workload forecasting, and dependencies
-5. Notifications, observability, browser accessibility tests, and integrations
+1. Passkeys and transactional email verification
+2. Attachments, custom fields, and richer planning metadata
+3. Backlog triage, cycle automation, workload forecasting, and dependencies
+4. Notifications, observability, browser accessibility tests, and integrations
 
 This scope follows the strongest patterns in established trackers: issues need
 clear ownership, priority, workflow state, and optional planning properties

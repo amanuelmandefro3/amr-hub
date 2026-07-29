@@ -13,21 +13,17 @@ DATABASE_URL="postgresql://USER:PASSWORD@POOLED_HOST:5432/amr_hub?sslmode=requir
 DIRECT_URL="postgresql://USER:PASSWORD@DIRECT_HOST:5432/amr_hub?sslmode=require"
 NEXT_PUBLIC_APP_URL="https://your-production-domain.example"
 BETTER_AUTH_SECRET="GENERATED_SECRET"
-AUTH_BOOTSTRAP_TOKEN="GENERATED_ONE_TIME_OWNER_TOKEN"
 ```
 
 - `DATABASE_URL` is the pooled connection used by application requests.
 - `DIRECT_URL` bypasses the pooler for migrations and administrative commands.
 - `BETTER_AUTH_SECRET` signs and protects authentication cookies and must contain
   at least 32 unpredictable characters.
-- `AUTH_BOOTSTRAP_TOKEN` authorizes the one-time owner account setup. Keep it
-  private even after setup closes.
-- Never commit either production database URL.
+- Never commit the authentication secret or either production database URL.
 
-Generate independent authentication values:
+Generate the authentication secret:
 
 ```bash
-openssl rand -base64 32
 openssl rand -base64 32
 ```
 
@@ -49,7 +45,7 @@ Use `npm run db:down` to stop the service without deleting its named volume.
 ## First production release
 
 1. Provision managed PostgreSQL and record its pooled and direct URLs.
-2. Add all five required environment variables to the hosting platform.
+2. Add all four required environment variables to the hosting platform.
 3. Apply the committed schema with the direct connection:
 
 ```bash
@@ -64,12 +60,11 @@ npx vercel deploy --prod
 ```
 
 5. Confirm `GET /api/health` returns HTTP `200` with `"status": "ok"`.
-6. Open `/setup`, create the owner with `AUTH_BOOTSTRAP_TOKEN`, and store the
-   chosen password in a password manager.
-7. Confirm `/setup` now redirects to sign-in and unauthenticated workspace APIs
-   return HTTP `401`.
-8. Sign in and confirm the eight demo issues, three cycles, and two system saved
-   views were initialized.
+6. Open `/signup`, create an account, and complete the required organization
+   name, handle, and issue-key step.
+7. Confirm the new organization opens with an empty issue workspace and that
+   its first issue uses the configured key.
+8. Sign out and confirm unauthenticated workspace APIs return HTTP `401`.
 
 `prisma migrate deploy` applies pending migrations without resetting existing
 data. Run it before promoting application code that depends on a new schema.
@@ -90,6 +85,9 @@ After deployment, verify:
 
 - `/api/health` reports a reachable database.
 - Unauthenticated `/`, `/issues`, and `/cycles` redirect to `/login`.
+- `/login` links clearly to `/signup`, and signup continues to `/onboarding`.
+- Accounts without an organization receive `ORGANIZATION_REQUIRED` and cannot
+  access workspace data.
 - Authenticated `/`, `/issues`, and `/cycles` return HTTP `200`.
 - Unauthenticated workspace APIs return HTTP `401`.
 - Creating and editing an issue persists after a page reload.
@@ -101,8 +99,10 @@ After deployment, verify:
   every account session and unused recovery code after a successful reset.
 - An owner can create and revoke a member invitation, and the revoked link is
   rejected without creating an account.
-- Removing a member immediately rejects their existing session and deletes
-  their credentials while retaining historical author names in workspace data.
+- Removing a member immediately rejects sessions for that organization while
+  retaining historical author names in workspace data.
+- Two organization owners cannot list, edit, comment on, or reference each
+  other's issues, labels, cycles, saved views, invitations, or members.
 - Hosting logs contain no Prisma connection or migration errors.
 
 ## Backups and recovery
