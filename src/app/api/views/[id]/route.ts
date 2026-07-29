@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { deleteSavedView } from "../../../../server/savedViews";
 import {
-  getRequestSession,
+  getWorkspaceSession,
+  organizationRequiredResponse,
   unauthorizedResponse,
 } from "../../../../server/session";
 
@@ -10,13 +11,20 @@ type RouteContext = {
 };
 
 export async function DELETE(request: Request, context: RouteContext) {
-  const session = await getRequestSession(request);
+  const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
+  if (!session.workspace) return organizationRequiredResponse();
 
   try {
     const { id } = await context.params;
 
-    if (!(await deleteSavedView(id, session.user.id))) {
+    if (
+      !(await deleteSavedView(
+        id,
+        session.user.id,
+        session.workspace.id,
+      ))
+    ) {
       return NextResponse.json(
         { error: "Saved view not found" },
         { status: 404 },

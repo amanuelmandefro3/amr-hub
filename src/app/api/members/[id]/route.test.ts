@@ -2,16 +2,21 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  getRequestSession: vi.fn(),
+  getWorkspaceSession: vi.fn(),
   removeWorkspaceMember: vi.fn(),
 }));
 
 vi.mock("../../../../server/session", async () => {
   const { NextResponse } = await import("next/server");
   return {
-    getRequestSession: mocks.getRequestSession,
+    getWorkspaceSession: mocks.getWorkspaceSession,
     unauthorizedResponse: () =>
       NextResponse.json({ error: "Authentication required" }, { status: 401 }),
+    organizationRequiredResponse: () =>
+      NextResponse.json(
+        { error: "Organization required", code: "ORGANIZATION_REQUIRED" },
+        { status: 409 },
+      ),
   };
 });
 
@@ -37,7 +42,7 @@ describe("DELETE /api/members/:id", () => {
   });
 
   it("requires authentication", async () => {
-    mocks.getRequestSession.mockResolvedValue(null);
+    mocks.getWorkspaceSession.mockResolvedValue(null);
 
     const response = await DELETE(request(), context());
 
@@ -46,8 +51,9 @@ describe("DELETE /api/members/:id", () => {
   });
 
   it("requires the owner role", async () => {
-    mocks.getRequestSession.mockResolvedValue({
-      user: { id: "member-2", role: "MEMBER" },
+    mocks.getWorkspaceSession.mockResolvedValue({
+      user: { id: "member-2" },
+      workspace: { id: "organization-1", role: "member" },
     });
 
     const response = await DELETE(request(), context());
@@ -56,9 +62,22 @@ describe("DELETE /api/members/:id", () => {
     expect(mocks.removeWorkspaceMember).not.toHaveBeenCalled();
   });
 
+  it("requires an active organization", async () => {
+    mocks.getWorkspaceSession.mockResolvedValue({
+      user: { id: "owner-1" },
+      workspace: null,
+    });
+
+    const response = await DELETE(request(), context());
+
+    expect(response.status).toBe(409);
+    expect(mocks.removeWorkspaceMember).not.toHaveBeenCalled();
+  });
+
   it("does not allow the owner account to remove itself", async () => {
-    mocks.getRequestSession.mockResolvedValue({
-      user: { id: "owner-1", role: "OWNER" },
+    mocks.getWorkspaceSession.mockResolvedValue({
+      user: { id: "owner-1" },
+      workspace: { id: "organization-1", role: "owner" },
     });
 
     const response = await DELETE(request(), context("owner-1"));
@@ -68,20 +87,25 @@ describe("DELETE /api/members/:id", () => {
   });
 
   it("removes an existing member for the owner", async () => {
-    mocks.getRequestSession.mockResolvedValue({
-      user: { id: "owner-1", role: "OWNER" },
+    mocks.getWorkspaceSession.mockResolvedValue({
+      user: { id: "owner-1" },
+      workspace: { id: "organization-1", role: "owner" },
     });
     mocks.removeWorkspaceMember.mockResolvedValue(true);
 
     const response = await DELETE(request(), context());
 
     expect(response.status).toBe(200);
-    expect(mocks.removeWorkspaceMember).toHaveBeenCalledWith("member-1");
+    expect(mocks.removeWorkspaceMember).toHaveBeenCalledWith(
+      "member-1",
+      "organization-1",
+    );
   });
 
   it("returns not found without deleting an owner", async () => {
-    mocks.getRequestSession.mockResolvedValue({
-      user: { id: "owner-1", role: "OWNER" },
+    mocks.getWorkspaceSession.mockResolvedValue({
+      user: { id: "owner-1" },
+      workspace: { id: "organization-1", role: "owner" },
     });
     mocks.removeWorkspaceMember.mockResolvedValue(false);
 

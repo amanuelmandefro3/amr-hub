@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../prisma/client";
 import {
-  DEMO_ISSUES,
   KIND_LABELS,
   PRIORITY_LABELS,
   STATUS_LABELS,
@@ -19,6 +18,8 @@ import {
 export type WorkspaceActor = {
   id: string;
   name: string;
+  organizationId: string;
+  organizationKey: string;
 };
 
 const issueInclude = {
@@ -73,80 +74,22 @@ function serializeIssue(issue: StoredIssue): Issue {
   };
 }
 
-function issueSequence(id: string) {
-  const sequence = Number(id.split("-")[1]);
-  return Number.isFinite(sequence) ? sequence : 0;
-}
-
-async function ensureDemoWorkspace() {
-  await ensureWorkspaceLabels();
-  if ((await prisma.issue.count()) > 0) return;
-
-  try {
-    await prisma.$transaction(
-      DEMO_ISSUES.map((issue) =>
-        prisma.issue.create({
-          data: {
-            id: issue.id,
-            sequence: issueSequence(issue.id),
-            title: issue.title,
-            description: issue.description,
-            status: issue.status,
-            priority: issue.priority,
-            kind: issue.kind,
-            assignee: issue.assignee,
-            dueDate: issue.dueDate ? new Date(issue.dueDate) : null,
-            estimate: issue.estimate,
-            cycleId: issue.cycleId,
-            createdAt: new Date(issue.createdAt),
-            labels: {
-              create: issue.labels.map((label) => ({
-                label: { connect: { id: label.id } },
-              })),
-            },
-            comments: {
-              create: (issue.comments ?? []).map((comment) => ({
-                id: comment.id,
-                body: comment.body,
-                author: comment.author,
-                createdAt: new Date(comment.createdAt),
-              })),
-            },
-            activity: {
-              create: (issue.activity ?? []).map((event) => ({
-                id: event.id,
-                type: event.type,
-                description: event.description,
-                actor: event.actor,
-                createdAt: new Date(event.createdAt),
-              })),
-            },
-          },
-        }),
-      ),
-    );
-  } catch (error) {
-    if (
-      !(
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      )
-    ) {
-      throw error;
-    }
-  }
-}
-
-export async function ensureWorkspaceLabels() {
-  if ((await prisma.label.count()) >= WORKSPACE_LABELS.length) return;
-
+export async function ensureWorkspaceLabels(organizationId: string) {
   await prisma.$transaction(
     WORKSPACE_LABELS.map((label) =>
       prisma.label.upsert({
-        where: { id: label.id },
-        create: label,
+        where: {
+          organizationId_name: {
+            organizationId,
+            name: label.name,
+          },
+        },
+        create: {
+          ...label,
+          id: `${organizationId}:${label.id}`,
+          organizationId,
+        },
         update: {
-          name: label.name,
           color: label.color,
         },
       }),
@@ -154,9 +97,12 @@ export async function ensureWorkspaceLabels() {
   );
 }
 
-export async function listLabels(): Promise<WorkspaceLabel[]> {
-  await ensureWorkspaceLabels();
+export async function listLabels(
+  organizationId: string,
+): Promise<WorkspaceLabel[]> {
+  await ensureWorkspaceLabels(organizationId);
   return prisma.label.findMany({
+    where: { organizationId },
     select: {
       id: true,
       name: true,
@@ -166,10 +112,9 @@ export async function listLabels(): Promise<WorkspaceLabel[]> {
   });
 }
 
-export async function listIssues() {
-  await ensureDemoWorkspace();
-
+export async function listIssues(organizationId: string) {
   const issues = await prisma.issue.findMany({
+    where: { organizationId },
     include: issueInclude,
     orderBy: { sequence: "desc" },
   });
@@ -181,23 +126,25 @@ export async function createIssue(
   input: NewIssueInput,
   actor: WorkspaceActor,
 ) {
-  await ensureWorkspaceLabels();
-  await validateLabelIds(input.labelIds);
-  await validateCycleId(input.cycleId);
+  await ensureWorkspaceLabels(actor.organizationId);
+  await validateLabelIds(input.labelIds, actor.organizationId);
+  await validateCycleId(input.cycleId, actor.organizationId);
 
   const issue = await prisma.$transaction(async (transaction) => {
     const latestIssue = await transaction.issue.findFirst({
+      where: { organizationId: actor.organizationId },
       orderBy: { sequence: "desc" },
       select: { sequence: true },
     });
-    const sequence = (latestIssue?.sequence ?? 128) + 1;
+    const sequence = (latestIssue?.sequence ?? 0) + 1;
     const { dueDate, labelIds, ...fields } = input;
 
     return transaction.issue.create({
       data: {
         ...fields,
-        id: `AMR-${sequence}`,
+        id: `${actor.organizationKey}-${sequence}`,
         sequence,
+        organizationId: actor.organizationId,
         status: "OPEN",
         dueDate: dueDate ? parseDueDate(dueDate) : null,
         activity: {
@@ -239,11 +186,14 @@ function formatDueDate(value: string) {
   }).format(parseDueDate(value));
 }
 
-async function validateLabelIds(labelIds: string[]) {
+async function validateLabelIds(labelIds: string[], organizationId: string) {
   if (labelIds.length === 0) return;
 
   const count = await prisma.label.count({
-    where: { id: { in: labelIds } },
+    where: {
+      id: { in: labelIds },
+      organizationId,
+    },
   });
 
   if (count !== labelIds.length) {
@@ -258,11 +208,17 @@ export class UnknownLabelError extends Error {
   }
 }
 
-async function validateCycleId(cycleId: string | null | undefined) {
+async function validateCycleId(
+  cycleId: string | null | undefined,
+  organizationId: string,
+) {
   if (!cycleId) return null;
 
-  const cycle = await prisma.cycle.findUnique({
-    where: { id: cycleId },
+  const cycle = await prisma.cycle.findFirst({
+    where: {
+      id: cycleId,
+      organizationId,
+    },
     select: { name: true },
   });
 
@@ -417,14 +373,20 @@ export async function updateIssue(
   actor: WorkspaceActor,
 ) {
   if (updates.labelIds) {
-    await ensureWorkspaceLabels();
-    await validateLabelIds(updates.labelIds);
+    await ensureWorkspaceLabels(actor.organizationId);
+    await validateLabelIds(updates.labelIds, actor.organizationId);
   }
-  const nextCycleName = await validateCycleId(updates.cycleId);
+  const nextCycleName = await validateCycleId(
+    updates.cycleId,
+    actor.organizationId,
+  );
 
   const issue = await prisma.$transaction(async (transaction) => {
-    const current = await transaction.issue.findUnique({
-      where: { id },
+    const current = await transaction.issue.findFirst({
+      where: {
+        id,
+        organizationId: actor.organizationId,
+      },
       include: issueInclude,
     });
 
@@ -468,7 +430,12 @@ export async function addComment(
   body: string,
   actor: WorkspaceActor,
 ) {
-  const exists = await prisma.issue.count({ where: { id } });
+  const exists = await prisma.issue.count({
+    where: {
+      id,
+      organizationId: actor.organizationId,
+    },
+  });
   if (!exists) return null;
 
   const issue = await prisma.issue.update({

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import prisma from "../../prisma/client";
 import { auth, type AuthSession } from "../lib/auth";
 
 export async function getRequestSession(request: Request) {
@@ -7,10 +8,67 @@ export async function getRequestSession(request: Request) {
   });
 }
 
-export function actorFromSession(session: AuthSession) {
+export type WorkspaceContext = {
+  id: string;
+  name: string;
+  key: string;
+  slug: string;
+  role: string;
+};
+
+export type WorkspaceSession = AuthSession & {
+  workspace: WorkspaceContext | null;
+};
+
+export async function getWorkspaceSession(
+  request: Request,
+): Promise<WorkspaceSession | null> {
+  const session = await getRequestSession(request);
+  if (!session) return null;
+
+  const organizationId = session.session.activeOrganizationId;
+  if (!organizationId) return { ...session, workspace: null };
+
+  const membership = await prisma.member.findUnique({
+    where: {
+      organizationId_userId: {
+        organizationId,
+        userId: session.user.id,
+      },
+    },
+    include: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          key: true,
+          slug: true,
+        },
+      },
+    },
+  });
+
+  return {
+    ...session,
+    workspace: membership
+      ? {
+          ...membership.organization,
+          role: membership.role,
+        }
+      : null,
+  };
+}
+
+export function actorFromSession(session: WorkspaceSession) {
+  if (!session.workspace) {
+    throw new Error("Active organization required");
+  }
+
   return {
     id: session.user.id,
     name: session.user.name,
+    organizationId: session.workspace.id,
+    organizationKey: session.workspace.key,
   };
 }
 
@@ -18,5 +76,15 @@ export function unauthorizedResponse() {
   return NextResponse.json(
     { error: "Authentication required" },
     { status: 401 },
+  );
+}
+
+export function organizationRequiredResponse() {
+  return NextResponse.json(
+    {
+      error: "Create or select an organization to continue",
+      code: "ORGANIZATION_REQUIRED",
+    },
+    { status: 409 },
   );
 }

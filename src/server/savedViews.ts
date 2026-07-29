@@ -35,9 +35,10 @@ function serializeSavedView(view: {
   };
 }
 
-export async function listSavedViews(userId: string) {
+export async function listSavedViews(userId: string, organizationId: string) {
   const views = await prisma.savedView.findMany({
     where: {
+      organizationId,
       OR: [{ userId }, { userId: null }],
     },
     orderBy: [{ owner: "asc" }, { name: "asc" }],
@@ -52,7 +53,10 @@ export async function createSavedView(
 ) {
   if (input.labelId) {
     const labelExists = await prisma.label.count({
-      where: { id: input.labelId },
+      where: {
+        id: input.labelId,
+        organizationId: actor.organizationId,
+      },
     });
     if (!labelExists) throw new UnknownLabelError();
   }
@@ -63,6 +67,7 @@ export async function createSavedView(
         ...input,
         owner: actor.name,
         userId: actor.id,
+        organizationId: actor.organizationId,
       },
     });
     return serializeSavedView(view);
@@ -77,9 +82,17 @@ export async function createSavedView(
   }
 }
 
-export async function deleteSavedView(id: string, userId: string) {
+export async function deleteSavedView(
+  id: string,
+  userId: string,
+  organizationId: string,
+) {
   const result = await prisma.savedView.deleteMany({
-    where: { id, userId },
+    where: {
+      id,
+      userId,
+      organizationId,
+    },
   });
 
   return result.count === 1;

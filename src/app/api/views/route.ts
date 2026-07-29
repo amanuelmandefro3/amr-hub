@@ -8,18 +8,22 @@ import {
 import { UnknownLabelError } from "../../../server/issues";
 import {
   actorFromSession,
-  getRequestSession,
+  getWorkspaceSession,
+  organizationRequiredResponse,
   unauthorizedResponse,
 } from "../../../server/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const session = await getRequestSession(request);
+  const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
+  if (!session.workspace) return organizationRequiredResponse();
 
   try {
-    return NextResponse.json(await listSavedViews(session.user.id));
+    return NextResponse.json(
+      await listSavedViews(session.user.id, session.workspace.id),
+    );
   } catch (error) {
     console.error("Failed to load saved views", error);
     return NextResponse.json(
@@ -30,8 +34,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getRequestSession(request);
+  const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
+  if (!session.workspace) return organizationRequiredResponse();
 
   try {
     const validation = savedViewSchema.safeParse(await request.json());

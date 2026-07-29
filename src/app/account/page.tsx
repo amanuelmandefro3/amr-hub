@@ -36,6 +36,7 @@ type WorkspaceAccess = {
 
 export default function AccountPage() {
   const { data: session, refetch: refetchSession } = authClient.useSession();
+  const { data: activeMember } = authClient.useActiveMember();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -61,7 +62,7 @@ export default function AccountPage() {
   };
 
   useEffect(() => {
-    if (session?.user.role !== "OWNER") return;
+    if (activeMember?.role !== "owner") return;
 
     let active = true;
     fetch("/api/invitations", { cache: "no-store" })
@@ -79,7 +80,7 @@ export default function AccountPage() {
     return () => {
       active = false;
     };
-  }, [session?.user.role]);
+  }, [activeMember?.role]);
 
   const changePassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -170,7 +171,7 @@ export default function AccountPage() {
   const removeMember = async (user: WorkspaceAccess["users"][number]) => {
     if (
       !window.confirm(
-        `Remove ${user.name} from this workspace? Every active session and credential for this account will be revoked.`,
+        `Remove ${user.name} from this workspace? Their active workspace sessions will be revoked immediately.`,
       )
     ) {
       return;
@@ -195,7 +196,7 @@ export default function AccountPage() {
     await refreshWorkspaceAccess();
   };
 
-  const isOwner = session?.user.role === "OWNER";
+  const isOwner = activeMember?.role === "owner";
 
   return (
     <div className="page account-page">
@@ -225,7 +226,7 @@ export default function AccountPage() {
           </div>
           <span className="role-badge">
             <ShieldCheck size={14} aria-hidden="true" />
-            {session?.user.role === "OWNER" ? "Owner" : "Member"}
+            {activeMember?.role === "owner" ? "Owner" : "Member"}
           </span>
         </section>
 

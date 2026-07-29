@@ -1,8 +1,10 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { twoFactor } from "better-auth/plugins";
+import { APIError } from "better-auth/api";
+import { organization, twoFactor } from "better-auth/plugins";
 import prisma from "../../prisma/client";
 import { loadServerEnvironment } from "../server/env";
+import { organizationOnboardingSchema } from "../server/organizationSchemas";
 
 const environment = loadServerEnvironment();
 const vercelDeploymentUrl = process.env.VERCEL_URL
@@ -50,6 +52,26 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
     freshAge: 60 * 15,
   },
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          const membership = await prisma.member.findFirst({
+            where: { userId: session.userId },
+            orderBy: { createdAt: "asc" },
+            select: { organizationId: true },
+          });
+
+          return {
+            data: {
+              ...session,
+              activeOrganizationId: membership?.organizationId ?? null,
+            },
+          };
+        },
+      },
+    },
+  },
   rateLimit: {
     enabled: true,
     storage: "database",
@@ -75,6 +97,48 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    organization({
+      organizationLimit: 1,
+      membershipLimit: 100,
+      schema: {
+        organization: {
+          additionalFields: {
+            key: {
+              type: "string",
+              required: true,
+              input: true,
+            },
+          },
+        },
+        invitation: {
+          modelName: "organizationInvitation",
+        },
+      },
+      allowUserToCreateOrganization: async (user) =>
+        (await prisma.member.count({ where: { userId: user.id } })) === 0,
+      organizationHooks: {
+        beforeCreateOrganization: async ({ organization }) => {
+          const validation = organizationOnboardingSchema.safeParse(
+            organization,
+          );
+
+          if (!validation.success) {
+            throw new APIError("BAD_REQUEST", {
+              message:
+                validation.error.issues[0]?.message ??
+                "Organization details are invalid",
+            });
+          }
+
+          return {
+            data: {
+              ...organization,
+              ...validation.data,
+            },
+          };
+        },
+      },
+    }),
     twoFactor({
       issuer: "AMR Hub",
       twoFactorCookieMaxAge: 60 * 10,

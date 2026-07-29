@@ -18,6 +18,7 @@ import { authClient } from "../../../lib/auth-client";
 type InvitationDetails = {
   email: string;
   invitedBy: string;
+  organizationName: string;
   expiresAt: string;
 };
 
@@ -201,7 +202,7 @@ export default function InvitationPage({
           </span>
           <div>
             <p className="eyebrow">Team invitation</p>
-            <h1>Join AMR Hub</h1>
+            <h1>Join {invitation.organizationName}</h1>
             <p>
               {invitation.invitedBy} invited{" "}
               <strong>{invitation.email}</strong> as a workspace member.

@@ -39,19 +39,24 @@ function invitationState(
   return invitation.status;
 }
 
-export async function listWorkspaceAccess() {
-  const [users, invitations] = await Promise.all([
-    prisma.user.findMany({
+export async function listWorkspaceAccess(organizationId: string) {
+  const [members, invitations] = await Promise.all([
+    prisma.member.findMany({
+      where: { organizationId },
       orderBy: [{ role: "desc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            createdAt: true,
+          },
+        },
       },
     }),
     prisma.invitation.findMany({
+      where: { organizationId },
       orderBy: { createdAt: "desc" },
       take: 20,
       include: {
@@ -63,9 +68,10 @@ export async function listWorkspaceAccess() {
   ]);
 
   return {
-    users: users.map((user) => ({
-      ...user,
-      createdAt: user.createdAt.toISOString(),
+    users: members.map((member) => ({
+      ...member.user,
+      role: member.role.toUpperCase(),
+      createdAt: member.createdAt.toISOString(),
     })),
     invitations: invitations.map((invitation) => ({
       id: invitation.id,
@@ -82,6 +88,7 @@ export async function createMemberInvitation(
   email: string,
   invitedBy: string,
   origin: string,
+  organizationId: string,
 ) {
   const normalizedEmail = normalizeInvitationEmail(email);
   const token = createInvitationToken();
@@ -92,6 +99,7 @@ export async function createMemberInvitation(
       await transaction.invitation.updateMany({
         where: {
           email: normalizedEmail,
+          organizationId,
           status: "PENDING",
           expiresAt: { lte: new Date() },
         },
@@ -110,6 +118,7 @@ export async function createMemberInvitation(
           tokenHash: hashInvitationToken(token),
           expiresAt,
           invitedBy,
+          organizationId,
         },
       });
     });
@@ -142,6 +151,9 @@ export async function getInvitation(token: string) {
       inviter: {
         select: { name: true },
       },
+      organization: {
+        select: { name: true },
+      },
     },
   });
 
@@ -152,6 +164,7 @@ export async function getInvitation(token: string) {
   return {
     email: invitation.email,
     invitedBy: invitation.inviter.name,
+    organizationName: invitation.organization.name,
     expiresAt: invitation.expiresAt.toISOString(),
   };
 }
@@ -216,6 +229,16 @@ export async function acceptMemberInvitation(input: {
         },
       });
 
+      await transaction.member.create({
+        data: {
+          id: randomUUID(),
+          userId,
+          organizationId: invitation.organizationId,
+          role: "member",
+          createdAt: now,
+        },
+      });
+
       return user;
     });
   } catch (error) {
@@ -229,10 +252,11 @@ export async function acceptMemberInvitation(input: {
   }
 }
 
-export async function revokeInvitation(id: string) {
+export async function revokeInvitation(id: string, organizationId: string) {
   const result = await prisma.invitation.updateMany({
     where: {
       id,
+      organizationId,
       status: "PENDING",
     },
     data: { status: "REVOKED" },

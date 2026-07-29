@@ -6,7 +6,8 @@ import {
   listWorkspaceAccess,
 } from "../../../server/invitations";
 import {
-  getRequestSession,
+  getWorkspaceSession,
+  organizationRequiredResponse,
   unauthorizedResponse,
 } from "../../../server/session";
 
@@ -20,12 +21,13 @@ function forbiddenResponse() {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getRequestSession(request);
+  const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
-  if (session.user.role !== "OWNER") return forbiddenResponse();
+  if (!session.workspace) return organizationRequiredResponse();
+  if (session.workspace.role !== "owner") return forbiddenResponse();
 
   try {
-    return NextResponse.json(await listWorkspaceAccess(), {
+    return NextResponse.json(await listWorkspaceAccess(session.workspace.id), {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
@@ -38,9 +40,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getRequestSession(request);
+  const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
-  if (session.user.role !== "OWNER") return forbiddenResponse();
+  if (!session.workspace) return organizationRequiredResponse();
+  if (session.workspace.role !== "owner") return forbiddenResponse();
 
   try {
     const validation = createInvitationSchema.safeParse(await request.json());
@@ -58,6 +61,7 @@ export async function POST(request: NextRequest) {
       validation.data.email,
       session.user.id,
       request.nextUrl.origin,
+      session.workspace.id,
     );
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

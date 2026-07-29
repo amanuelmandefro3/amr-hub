@@ -9,36 +9,45 @@ datasource db {
 }
 
 model Issue {
-  id          String       @id
-  sequence    Int          @unique
-  title       String
-  description String
-  status      String       @default("OPEN")
-  priority    String       @default("MEDIUM")
-  kind        String       @default("TASK")
-  assignee    String       @default("Unassigned")
-  dueDate     DateTime?
-  estimate    Int?
-  cycleId     String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  cycle       Cycle?       @relation(fields: [cycleId], references: [id], onDelete: SetNull)
-  comments    Comment[]
-  activity    Activity[]
-  labels      IssueLabel[]
+  id             String       @id
+  sequence       Int
+  title          String
+  description    String
+  status         String       @default("OPEN")
+  priority       String       @default("MEDIUM")
+  kind           String       @default("TASK")
+  assignee       String       @default("Unassigned")
+  dueDate        DateTime?
+  estimate       Int?
+  cycleId        String?
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  cycle          Cycle?       @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  comments       Comment[]
+  activity       Activity[]
+  labels         IssueLabel[]
 
+  @@unique([organizationId, sequence])
   @@index([createdAt])
   @@index([status])
   @@index([cycleId])
+  @@index([organizationId, status])
 }
 
 model Label {
-  id         String       @id
-  name       String       @unique
-  color      String
-  createdAt  DateTime     @default(now())
-  issues     IssueLabel[]
-  savedViews SavedView[]
+  id             String       @id
+  name           String
+  color          String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issues         IssueLabel[]
+  savedViews     SavedView[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
 }
 
 model IssueLabel {
@@ -81,87 +90,152 @@ model Activity {
 }
 
 model SavedView {
-  id        String   @id @default(cuid())
-  name      String
-  owner     String
-  userId    String?
-  query     String   @default("")
-  status    String   @default("ALL")
-  priority  String   @default("ALL")
-  assignee  String   @default("ALL")
-  sort      String   @default("NEWEST")
-  labelId   String?
-  label     Label?   @relation(fields: [labelId], references: [id], onDelete: SetNull)
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String       @id @default(cuid())
+  name           String
+  owner          String
+  userId         String?
+  organizationId String
+  query          String       @default("")
+  status         String       @default("ALL")
+  priority       String       @default("ALL")
+  assignee       String       @default("ALL")
+  sort           String       @default("NEWEST")
+  labelId        String?
+  label          Label?       @relation(fields: [labelId], references: [id], onDelete: SetNull)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  @@unique([userId, name])
+  @@unique([organizationId, userId, name])
   @@index([owner])
   @@index([labelId])
   @@index([userId])
+  @@index([organizationId])
 }
 
 model Cycle {
-  id        String   @id
-  name      String   @unique
-  startDate DateTime
-  endDate   DateTime
-  capacity  Int
-  createdAt DateTime @default(now())
-  issues    Issue[]
+  id             String       @id
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  capacity       Int
+  organizationId String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issues         Issue[]
 
+  @@unique([organizationId, name])
   @@index([startDate, endDate])
+  @@index([organizationId])
 }
 
 model User {
-  id               String         @id
-  name             String
-  email            String         @unique
-  emailVerified    Boolean        @default(false)
-  image            String?
-  role             String         @default("OWNER")
-  twoFactorEnabled Boolean        @default(false)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  sessions         Session[]
-  accounts         Account[]
-  twoFactors       TwoFactor[]
-  recoveryCodes    RecoveryCode[]
-  comments         Comment[]
-  activity         Activity[]
-  savedViews       SavedView[]
-  invitations      Invitation[]
+  id                      String                   @id
+  name                    String
+  email                   String                   @unique
+  emailVerified           Boolean                  @default(false)
+  image                   String?
+  role                    String                   @default("OWNER")
+  twoFactorEnabled        Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  sessions                Session[]
+  accounts                Account[]
+  twoFactors              TwoFactor[]
+  recoveryCodes           RecoveryCode[]
+  comments                Comment[]
+  activity                Activity[]
+  savedViews              SavedView[]
+  memberships             Member[]
+  invitations             Invitation[]             @relation("WorkspaceInvitationInviter")
+  organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")
 
   @@map("user")
 }
 
+model Organization {
+  id                      String                   @id
+  name                    String
+  key                     String                   @unique
+  slug                    String                   @unique
+  logo                    String?
+  metadata                String?
+  createdAt               DateTime
+  updatedAt               DateTime                 @updatedAt
+  members                 Member[]
+  organizationInvitations OrganizationInvitation[]
+  workspaceInvitations    Invitation[]
+  issues                  Issue[]
+  labels                  Label[]
+  savedViews              SavedView[]
+  cycles                  Cycle[]
+
+  @@map("organization")
+}
+
+model Member {
+  id             String       @id
+  organizationId String
+  userId         String
+  role           String       @default("member")
+  createdAt      DateTime
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("member")
+}
+
+model OrganizationInvitation {
+  id             String       @id
+  organizationId String
+  email          String
+  role           String
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter        User         @relation("OrganizationInvitationInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([inviterId])
+  @@map("organizationInvitation")
+}
+
 model Invitation {
-  id        String   @id
-  email     String
-  tokenHash String   @unique
-  status    String   @default("PENDING")
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  invitedBy String
-  inviter   User     @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+  id             String       @id
+  email          String
+  tokenHash      String       @unique
+  status         String       @default("PENDING")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  invitedBy      String
+  organizationId String
+  inviter        User         @relation("WorkspaceInvitationInviter", fields: [invitedBy], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([email, status])
   @@index([expiresAt])
-  @@map("invitation")
+  @@index([organizationId])
+  @@map("workspaceInvitation")
 }
 
 model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String   @id
+  expiresAt            DateTime
+  token                String   @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  activeOrganizationId String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("session")

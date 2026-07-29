@@ -23,6 +23,8 @@ export default function NavBar() {
   const currentPath = usePathname();
   const router = useRouter();
   const { data: session } = authClient.useSession();
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+  const { data: activeMember } = authClient.useActiveMember();
 
   useEffect(() => {
     const openCreateIssue = (event: KeyboardEvent) => {
@@ -67,7 +69,7 @@ export default function NavBar() {
           <span className="brand-mark">A</span>
           <span>
             <strong>AMR Hub</strong>
-            <small>Product workspace</small>
+            <small>{activeOrganization?.name ?? "Product workspace"}</small>
           </span>
         </div>
 
@@ -98,7 +100,7 @@ export default function NavBar() {
           <Link className="user-identity" href="/account">
             <strong>{userName}</strong>
             <small>
-              {session?.user.role === "OWNER"
+              {activeMember?.role === "owner"
                 ? "Workspace owner"
                 : "Workspace member"}
             </small>

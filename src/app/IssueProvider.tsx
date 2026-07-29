@@ -55,6 +55,18 @@ async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
     throw new Error("Your session has expired");
   }
 
+  if (
+    response.status === 409 &&
+    typeof payload === "object" &&
+    payload !== null &&
+    "code" in payload &&
+    payload.code === "ORGANIZATION_REQUIRED" &&
+    typeof window !== "undefined"
+  ) {
+    window.location.assign("/onboarding");
+    throw new Error("Organization setup is required");
+  }
+
   if (!response.ok) {
     const responseError =
       typeof payload === "object" &&

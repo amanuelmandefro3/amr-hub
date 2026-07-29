@@ -8,18 +8,20 @@ import {
 } from "../../../server/issues";
 import {
   actorFromSession,
-  getRequestSession,
+  getWorkspaceSession,
+  organizationRequiredResponse,
   unauthorizedResponse,
 } from "../../../server/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const session = await getRequestSession(request);
+  const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
+  if (!session.workspace) return organizationRequiredResponse();
 
   try {
-    return NextResponse.json(await listIssues());
+    return NextResponse.json(await listIssues(session.workspace.id));
   } catch (error) {
     console.error("Failed to load issues", error);
     return NextResponse.json(
@@ -30,8 +32,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getRequestSession(request);
+  const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
+  if (!session.workspace) return organizationRequiredResponse();
 
   try {
     const validation = createIssueSchema.safeParse(await request.json());

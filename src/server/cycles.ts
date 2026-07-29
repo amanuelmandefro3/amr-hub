@@ -17,8 +17,9 @@ function serializeCycle(cycle: {
   };
 }
 
-export async function listCycles(): Promise<Cycle[]> {
+export async function listCycles(organizationId: string): Promise<Cycle[]> {
   const cycles = await prisma.cycle.findMany({
+    where: { organizationId },
     orderBy: { startDate: "asc" },
   });
 

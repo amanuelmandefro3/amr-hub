@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { removeWorkspaceMember } from "../../../../server/members";
 import {
-  getRequestSession,
+  getWorkspaceSession,
+  organizationRequiredResponse,
   unauthorizedResponse,
 } from "../../../../server/session";
 
@@ -9,9 +10,10 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const session = await getRequestSession(request);
+  const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
-  if (session.user.role !== "OWNER") {
+  if (!session.workspace) return organizationRequiredResponse();
+  if (session.workspace.role !== "owner") {
     return NextResponse.json(
       { error: "Owner access required" },
       { status: 403 },
@@ -26,7 +28,7 @@ export async function DELETE(
     );
   }
 
-  const removed = await removeWorkspaceMember(id);
+  const removed = await removeWorkspaceMember(id, session.workspace.id);
   if (!removed) {
     return NextResponse.json(
       { error: "Workspace member not found" },
