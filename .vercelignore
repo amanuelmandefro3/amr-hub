@@ -1,0 +1,7 @@
+.auth-bootstrap
+.env
+.env.*
+.next
+coverage
+node_modules
+prisma/dev.db
