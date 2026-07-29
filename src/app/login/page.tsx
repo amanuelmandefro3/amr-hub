@@ -125,14 +125,17 @@ export default function LoginPage() {
               </span>
             </label>
 
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(event) => setRememberMe(event.target.checked)}
-              />
-              Keep me signed in
-            </label>
+            <div className="login-options">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                />
+                Keep me signed in
+              </label>
+              <Link href="/forgot-password">Forgot password?</Link>
+            </div>
 
             {error && (
               <p className="auth-error" role="alert">

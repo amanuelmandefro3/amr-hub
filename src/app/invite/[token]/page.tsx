@@ -113,7 +113,7 @@ export default function InvitationPage({
       return;
     }
 
-    router.replace("/");
+    router.replace("/account");
     router.refresh();
   };
 

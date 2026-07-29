@@ -26,6 +26,7 @@ server API backed by PostgreSQL.
 - One-time owner setup and personal saved-view ownership
 - Account security controls for password changes and device sign-out
 - TOTP authenticator protection with one-time backup codes and trusted devices
+- Offline password recovery codes with global session invalidation
 - Owner-issued, expiring member invitations with one-time bearer links
 - Workspace access management with member and invitation visibility
 - Database-aware readiness endpoint for deployment health checks
@@ -67,6 +68,7 @@ npm audit --omit=dev
 - Better Auth with scrypt password hashing and database-backed sessions
 - Database-backed authentication rate limits and a server-owned workspace role
 - Better Auth TOTP challenges with encrypted secrets and account lockout
+- Hashed password recovery codes protected by database-backed rate limits
 - Hashed invitation tokens and transactional member credential provisioning
 - Prisma and PostgreSQL with separate pooled runtime and direct migration
   connections

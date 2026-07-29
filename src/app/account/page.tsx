@@ -13,6 +13,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { authClient } from "../../lib/auth-client";
+import RecoveryCodeSettings from "../components/RecoveryCodeSettings";
 import TwoFactorSettings from "../components/TwoFactorSettings";
 
 type WorkspaceAccess = {
@@ -306,6 +307,8 @@ export default function AccountPage() {
             await refetchSession();
           }}
         />
+
+        <RecoveryCodeSettings />
 
         <section className="account-section">
           <header>

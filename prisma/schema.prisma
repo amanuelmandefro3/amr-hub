@@ -115,18 +115,19 @@ model Cycle {
 }
 
 model User {
-  id               String       @id
+  id               String         @id
   name             String
-  email            String       @unique
-  emailVerified    Boolean      @default(false)
+  email            String         @unique
+  emailVerified    Boolean        @default(false)
   image            String?
-  role             String       @default("OWNER")
-  twoFactorEnabled Boolean      @default(false)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  role             String         @default("OWNER")
+  twoFactorEnabled Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   sessions         Session[]
   accounts         Account[]
   twoFactors       TwoFactor[]
+  recoveryCodes    RecoveryCode[]
   comments         Comment[]
   activity         Activity[]
   savedViews       SavedView[]
@@ -199,6 +200,20 @@ model TwoFactor {
   @@index([secret])
   @@index([userId])
   @@map("twoFactor")
+}
+
+model RecoveryCode {
+  id        String    @id
+  codeHash  String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+  @@index([expiresAt])
+  @@map("recoveryCode")
 }
 
 model Verification {

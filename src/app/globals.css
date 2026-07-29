@@ -2677,6 +2677,24 @@ h2 {
   accent-color: var(--green-600);
 }
 
+.login-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: -2px 0 20px;
+}
+
+.login-options .checkbox-row {
+  margin: 0;
+}
+
+.login-options > a {
+  color: var(--green-600);
+  font-size: 11px;
+  font-weight: 650;
+}
+
 .auth-error {
   margin: -4px 0 15px;
   color: var(--red-600);
@@ -3180,6 +3198,55 @@ h2 {
   margin-top: 14px;
 }
 
+.recovery-code-section > header {
+  align-items: flex-start;
+}
+
+.recovery-code-section > header > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.recovery-code-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  max-width: 640px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.recovery-code-form .form-field {
+  margin: 0;
+}
+
+.recovery-code-section > .account-status {
+  margin-top: 13px;
+}
+
+.recovery-codes {
+  border-color: var(--blue-200);
+  background: var(--blue-50);
+}
+
+.recovery-code-input {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px !important;
+  letter-spacing: 0;
+}
+
+.recovery-complete h1 {
+  margin-bottom: 9px;
+}
+
+.recovery-complete > p {
+  margin-bottom: 24px;
+  color: var(--gray-500);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
 .account-form {
   max-width: 640px;
 }
@@ -3671,12 +3738,14 @@ h2 {
   }
 
   .verification-form,
-  .two-factor-controls form {
+  .two-factor-controls form,
+  .recovery-code-form {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .verification-form .primary-button,
-  .two-factor-controls button {
+  .two-factor-controls button,
+  .recovery-code-form button {
     width: 100%;
   }
 

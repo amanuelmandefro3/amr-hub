@@ -85,7 +85,7 @@ export default function SetupPage() {
       return;
     }
 
-    router.replace("/");
+    router.replace("/account");
     router.refresh();
   };
 

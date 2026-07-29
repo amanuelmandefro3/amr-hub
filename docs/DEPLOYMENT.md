@@ -96,6 +96,8 @@ After deployment, verify:
 - Password changes revoke other sessions and sign-out invalidates API access.
 - TOTP enrollment requires a valid password, a verified authenticator code, and
   produces one-time backup codes that should be stored outside the workspace.
+- Password recovery codes are displayed once, stored only as hashes, and revoke
+  every account session and unused recovery code after a successful reset.
 - An owner can create and revoke a member invitation, and the revoked link is
   rejected without creating an account.
 - Hosting logs contain no Prisma connection or migration errors.
