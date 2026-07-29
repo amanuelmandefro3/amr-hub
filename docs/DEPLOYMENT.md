@@ -93,7 +93,8 @@ After deployment, verify:
 - Authenticated `/`, `/issues`, and `/cycles` return HTTP `200`.
 - Unauthenticated workspace APIs return HTTP `401`.
 - Creating and editing an issue persists after a page reload.
-- Password changes revoke other sessions and sign-out invalidates API access.
+- Password changes revoke other sessions; users can inspect and revoke each
+  database-backed device session independently.
 - TOTP enrollment requires a valid password, a verified authenticator code, and
   produces one-time backup codes that should be stored outside the workspace.
 - Password recovery codes are displayed once, stored only as hashes, and revoke

@@ -5,7 +5,6 @@ import {
   Check,
   Copy,
   KeyRound,
-  Laptop,
   LoaderCircle,
   MailPlus,
   ShieldCheck,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 import { authClient } from "../../lib/auth-client";
 import RecoveryCodeSettings from "../components/RecoveryCodeSettings";
+import SessionManager from "../components/SessionManager";
 import TwoFactorSettings from "../components/TwoFactorSettings";
 
 type WorkspaceAccess = {
@@ -36,14 +36,11 @@ type WorkspaceAccess = {
 
 export default function AccountPage() {
   const { data: session, refetch: refetchSession } = authClient.useSession();
-  const [sessionCount, setSessionCount] = useState<number | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [passwordStatus, setPasswordStatus] = useState<string | null>(null);
-  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isRevoking, setIsRevoking] = useState(false);
   const [workspaceAccess, setWorkspaceAccess] =
     useState<WorkspaceAccess | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -52,16 +49,6 @@ export default function AccountPage() {
   const [isInviting, setIsInviting] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
-
-  const refreshSessions = () => {
-    authClient.listSessions().then(({ data }) => {
-      setSessionCount(data?.length ?? 1);
-    });
-  };
-
-  useEffect(() => {
-    refreshSessions();
-  }, []);
 
   const refreshWorkspaceAccess = async () => {
     const response = await fetch("/api/invitations", { cache: "no-store" });
@@ -123,22 +110,6 @@ export default function AccountPage() {
     setNewPassword("");
     setConfirmation("");
     setPasswordStatus("Password updated and other sessions signed out.");
-    refreshSessions();
-  };
-
-  const revokeOtherSessions = async () => {
-    setIsRevoking(true);
-    setSessionStatus(null);
-    const result = await authClient.revokeOtherSessions();
-    setIsRevoking(false);
-
-    if (result.error) {
-      setSessionStatus("Other sessions could not be signed out.");
-      return;
-    }
-
-    setSessionStatus("All other sessions have been signed out.");
-    refreshSessions();
   };
 
   const createInvitation = async (event: FormEvent<HTMLFormElement>) => {
@@ -310,45 +281,9 @@ export default function AccountPage() {
 
         <RecoveryCodeSettings />
 
-        <section className="account-section">
-          <header>
-            <span>
-              <Laptop size={17} aria-hidden="true" />
-            </span>
-            <div>
-              <h2>Active sessions</h2>
-              <p>
-                {sessionCount === null
-                  ? "Checking signed-in devices"
-                  : `${sessionCount} active ${
-                      sessionCount === 1 ? "session" : "sessions"
-                    }`}
-              </p>
-            </div>
-          </header>
-          <div className="session-control">
-            <div>
-              <strong>Current browser</strong>
-              <span>Keep this session and revoke every other one.</span>
-            </div>
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={() => void revokeOtherSessions()}
-              disabled={isRevoking || sessionCount === 1}
-            >
-              {isRevoking && (
-                <LoaderCircle
-                  className="spinning-icon"
-                  size={15}
-                  aria-hidden="true"
-                />
-              )}
-              Sign out other devices
-            </button>
-          </div>
-          {sessionStatus && <p className="account-status">{sessionStatus}</p>}
-        </section>
+        <SessionManager
+          currentSessionToken={session?.session.token ?? null}
+        />
 
         {isOwner && (
           <section className="account-section team-access-section">

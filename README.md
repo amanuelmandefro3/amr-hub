@@ -24,7 +24,7 @@ server API backed by PostgreSQL.
 - Closed-workspace email and password authentication
 - Database-backed, revocable sessions with protected pages and APIs
 - One-time owner setup and personal saved-view ownership
-- Account security controls for password changes and device sign-out
+- Account security controls for password changes and per-device session sign-out
 - TOTP authenticator protection with one-time backup codes and trusted devices
 - Offline password recovery codes with global session invalidation
 - Owner-issued, expiring member invitations with one-time bearer links

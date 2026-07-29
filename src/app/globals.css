@@ -3002,14 +3002,12 @@ h2 {
   gap: 3px;
 }
 
-.account-profile strong,
-.session-control strong {
+.account-profile strong {
   font-size: 13px;
   font-weight: 680;
 }
 
-.account-profile > div span,
-.session-control span {
+.account-profile > div span {
   color: var(--gray-500);
   font-size: 11px;
 }
@@ -3247,12 +3245,121 @@ h2 {
   line-height: 1.65;
 }
 
+.session-manager > header {
+  align-items: center;
+}
+
+.session-manager > header > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.session-manager > header > .secondary-button {
+  height: 34px;
+  font-size: 11px;
+}
+
+.session-loading {
+  display: flex;
+  min-height: 74px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-top: 1px solid var(--gray-100);
+  color: var(--gray-500);
+  font-size: 11px;
+}
+
+.session-list {
+  border-top: 1px solid var(--gray-100);
+}
+
+.session-row {
+  display: grid;
+  min-height: 68px;
+  grid-template-columns: 34px minmax(180px, 1fr) minmax(150px, auto) 88px;
+  align-items: center;
+  gap: 11px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.session-row:last-child {
+  border-bottom: 0;
+}
+
+.session-device-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--blue-600);
+  background: var(--blue-50);
+}
+
+.session-identity,
+.session-timing {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.session-identity strong {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  color: var(--gray-800);
+  font-size: 11px;
+  font-weight: 670;
+}
+
+.session-identity strong span {
+  color: var(--green-600);
+  font-size: 8px;
+  font-weight: 730;
+  text-transform: uppercase;
+}
+
+.session-identity > span,
+.session-timing span {
+  overflow: hidden;
+  color: var(--gray-500);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-timing {
+  text-align: right;
+}
+
+.session-timing strong {
+  color: var(--gray-600);
+  font-size: 9px;
+  font-weight: 620;
+}
+
+.session-row > .icon-button {
+  justify-self: end;
+}
+
+.current-session-check {
+  justify-self: end;
+  color: var(--green-600);
+  font-size: 9px;
+  font-weight: 680;
+}
+
+.session-manager > .account-status {
+  margin-top: 13px;
+}
+
 .account-form {
   max-width: 640px;
 }
 
-.account-actions,
-.session-control {
+.account-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3482,16 +3589,6 @@ h2 {
   height: 30px;
 }
 
-.session-control {
-  padding-top: 16px;
-  border-top: 1px solid var(--gray-100);
-}
-
-.session-control > div {
-  display: grid;
-  gap: 3px;
-}
-
 .secondary-button:disabled {
   cursor: not-allowed;
   color: var(--gray-400);
@@ -3711,14 +3808,12 @@ h2 {
     width: max-content;
   }
 
-  .account-actions,
-  .session-control {
+  .account-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .account-actions .primary-button,
-  .session-control .secondary-button {
+  .account-actions .primary-button {
     width: 100%;
   }
 
@@ -3751,6 +3846,31 @@ h2 {
 
   .backup-code-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .session-manager > header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .session-manager > header > .secondary-button {
+    width: 100%;
+  }
+
+  .session-row {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    padding: 10px 0;
+  }
+
+  .session-timing {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .session-row > .icon-button,
+  .current-session-check {
+    grid-row: 1 / span 2;
+    grid-column: 3;
   }
 
   .team-invite-form {
