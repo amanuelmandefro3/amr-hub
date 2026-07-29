@@ -11,7 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useIssues } from "./IssueProvider";
-import { IssueVisualRow } from "./components/IssueVisualRow";
+import { WorkspaceActivity } from "./components/WorkspaceActivity";
 import { WorkspaceLoading } from "./components/WorkspaceLoading";
 import {
   findCurrentCycle,
@@ -303,18 +303,14 @@ export default function Home() {
         <article className="panel recent-panel">
           <div className="panel-header">
             <div>
-              <h2>Recent issues</h2>
-              <p>Latest activity across your workspace</p>
+              <h2>Workspace activity</h2>
+              <p>Recent changes across every issue</p>
             </div>
             <Link className="text-link" href="/issues">
               View all <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
-          <div className="issue-rows">
-            {issues.slice(0, 5).map((issue) => (
-              <IssueVisualRow issue={issue} key={issue.id} compact />
-            ))}
-          </div>
+          <WorkspaceActivity issues={issues} />
         </article>
 
         <article className="panel priority-panel">
