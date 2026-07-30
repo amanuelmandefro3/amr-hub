@@ -24,7 +24,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (session) {
-      router.replace("/");
+      router.replace("/dashboard");
       return;
     }
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
       });
     }
 
-    router.replace("/");
+    router.replace("/dashboard");
     router.refresh();
   };
 

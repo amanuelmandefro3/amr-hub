@@ -50,7 +50,7 @@ export default function TwoFactorPage() {
       return;
     }
 
-    router.replace("/");
+    router.replace("/dashboard");
     router.refresh();
   };
 

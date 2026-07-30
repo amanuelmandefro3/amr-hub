@@ -2,6 +2,7 @@ import { getSessionCookie } from "better-auth/cookies";
 import { NextRequest, NextResponse } from "next/server";
 
 const publicRoutes = new Set([
+  "/",
   "/forgot-password",
   "/login",
   "/signup",
@@ -9,10 +10,13 @@ const publicRoutes = new Set([
   "/two-factor",
 ]);
 
+export function isPublicPath(pathname: string) {
+  return publicRoutes.has(pathname) || pathname.startsWith("/invite/");
+}
+
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isPublicRoute =
-    publicRoutes.has(pathname) || pathname.startsWith("/invite/");
+  const isPublicRoute = isPublicPath(pathname);
   const sessionCookie = getSessionCookie(request);
 
   if (!sessionCookie && !isPublicRoute) {

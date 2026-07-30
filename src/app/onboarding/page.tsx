@@ -46,7 +46,7 @@ export default function OnboardingPage() {
           await authClient.organization.setActive({
             organizationId: organization.id,
           });
-          router.replace("/");
+          router.replace("/dashboard");
           router.refresh();
           return;
         }
@@ -122,7 +122,7 @@ export default function OnboardingPage() {
       return;
     }
 
-    router.replace("/");
+    router.replace("/dashboard");
     router.refresh();
   };
 

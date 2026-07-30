@@ -33,6 +33,7 @@ server API backed by PostgreSQL.
 - Database-aware readiness endpoint for deployment health checks
 - Automated validation and planning tests with a migration-aware CI pipeline
 - Branded Open Graph and social-sharing preview
+- Public product page grounded in the real triage, cycle, and access workflows
 
 ## Run locally
 
@@ -46,7 +47,8 @@ npm run dev
 ```
 
 The repository includes an isolated PostgreSQL 16 service for local
-development. Open `/signup` to create an account, then create the required
+development. Open `/` for the public product page or `/signup` to create an
+account, then create the required
 organization workspace with a unique handle and issue key. New organizations
 start empty and cannot access another organization's issues or planning data.
 

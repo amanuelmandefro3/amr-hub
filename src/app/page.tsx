@@ -1,351 +1,458 @@
-"use client";
-
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import {
+  Activity,
   ArrowRight,
+  Bookmark,
+  CalendarRange,
+  Check,
   CircleCheck,
   Clock3,
-  Flame,
+  Gauge,
   Inbox,
-  Plus,
-  TrendingUp,
+  KeyRound,
+  ListFilter,
+  LockKeyhole,
+  MessageSquareText,
+  ShieldCheck,
+  Tag,
+  UsersRound,
 } from "lucide-react";
-import { useIssues } from "./IssueProvider";
-import { WorkspaceActivity } from "./components/WorkspaceActivity";
-import { WorkspaceLoading } from "./components/WorkspaceLoading";
-import {
-  findCurrentCycle,
-  formatCycleDateRange,
-  getCycleMetrics,
-} from "./data/cycles";
-import type { Issue } from "./data/issues";
 
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
+export const metadata: Metadata = {
+  title: {
+    absolute: "AMR Hub | Product delivery without the noise",
+  },
+  description:
+    "Triage issues, plan delivery cycles, and keep product work accountable in a secure organization workspace.",
+};
 
-function dateKey(value: Date | string) {
-  return new Date(value).toISOString().slice(0, 10);
-}
+const heroIssues = [
+  {
+    id: "AMR-128",
+    title: "Checkout stalls after applying a promo code",
+    priority: "Urgent",
+    priorityClass: "urgent",
+    status: "In progress",
+    statusClass: "progress",
+    owner: "MC",
+  },
+  {
+    id: "AMR-127",
+    title: "Add saved views for support triage",
+    priority: "High",
+    priorityClass: "high",
+    status: "Backlog",
+    statusClass: "backlog",
+    owner: "AR",
+  },
+  {
+    id: "AMR-126",
+    title: "Improve first-run workspace state",
+    priority: "Medium",
+    priorityClass: "medium",
+    status: "Done",
+    statusClass: "done",
+    owner: "JB",
+  },
+];
 
-function buildThroughput(issues: Issue[], now: Date) {
-  const today = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-  );
-  const points = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(today - (6 - index) * DAY_IN_MS);
-    return {
-      key: dateKey(date),
-      day: new Intl.DateTimeFormat("en", {
-        weekday: "short",
-        timeZone: "UTC",
-      }).format(date),
-      opened: 0,
-      closed: 0,
-    };
-  });
-  const byDate = new Map(points.map((point) => [point.key, point]));
+const triageIssues = [
+  {
+    id: "AMR-128",
+    title: "Checkout stalls after applying a promo code",
+    label: "Bug",
+    labelClass: "bug",
+    owner: "Maya",
+    due: "Today",
+  },
+  {
+    id: "AMR-127",
+    title: "Add saved views for support triage",
+    label: "Product",
+    labelClass: "product",
+    owner: "Amanuel",
+    due: "Aug 2",
+  },
+  {
+    id: "AMR-125",
+    title: "Record status changes in issue activity",
+    label: "Platform",
+    labelClass: "platform",
+    owner: "Jon",
+    due: "Aug 4",
+  },
+];
 
-  for (const issue of issues) {
-    const openedPoint = byDate.get(dateKey(issue.createdAt));
-    if (openedPoint) openedPoint.opened += 1;
-
-    const completionEvents = (issue.activity ?? []).filter(
-      (event) =>
-        event.type === "STATUS_CHANGED" &&
-        event.description.toLowerCase().endsWith("to done"),
-    );
-
-    if (completionEvents.length > 0) {
-      for (const event of completionEvents) {
-        const closedPoint = byDate.get(dateKey(event.createdAt));
-        if (closedPoint) closedPoint.closed += 1;
-      }
-    } else if (issue.status === "DONE") {
-      const closedPoint = byDate.get(dateKey(issue.createdAt));
-      if (closedPoint) closedPoint.closed += 1;
-    }
-  }
-
-  return points;
-}
-
-export default function Home() {
-  const { issues, cycles, isLoading } = useIssues();
-
-  if (isLoading) {
-    return <WorkspaceLoading label="overview" />;
-  }
-
-  const active = issues.filter((issue) => issue.status !== "DONE").length;
-  const inProgress = issues.filter(
-    (issue) => issue.status === "IN_PROGRESS",
-  ).length;
-  const completed = issues.filter((issue) => issue.status === "DONE").length;
-  const urgent = issues.filter(
-    (issue) => issue.priority === "URGENT" && issue.status !== "DONE",
-  ).length;
-  const completionRate = Math.round((completed / Math.max(issues.length, 1)) * 100);
-  const now = new Date();
-  const throughput = buildThroughput(issues, now);
-  const largestThroughput = Math.max(
-    1,
-    ...throughput.flatMap((point) => [point.opened, point.closed]),
-  );
-  const addedThisWeek = throughput.reduce(
-    (total, point) => total + point.opened,
-    0,
-  );
-  const activeOwners = new Set(
-    issues
-      .filter(
-        (issue) =>
-          issue.status !== "DONE" && issue.assignee !== "Unassigned",
-      )
-      .map((issue) => issue.assignee),
-  ).size;
-  const currentCycle = findCurrentCycle(cycles, now);
-  const cycleMetrics = currentCycle
-    ? getCycleMetrics(currentCycle, issues, now)
-    : null;
-
-  const priorityCounts = [
-    {
-      label: "Urgent",
-      value: issues.filter((issue) => issue.priority === "URGENT").length,
-      color: "var(--red-500)",
-    },
-    {
-      label: "High",
-      value: issues.filter((issue) => issue.priority === "HIGH").length,
-      color: "var(--amber-500)",
-    },
-    {
-      label: "Medium",
-      value: issues.filter((issue) => issue.priority === "MEDIUM").length,
-      color: "var(--blue-500)",
-    },
-    {
-      label: "Low / none",
-      value: issues.filter(
-        (issue) =>
-          issue.priority === "LOW" || issue.priority === "NO_PRIORITY",
-      ).length,
-      color: "var(--gray-400)",
-    },
-  ];
-
+export default function LandingPage() {
   return (
-    <div className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Product engineering</p>
-          <h1>Overview</h1>
-          <p className="page-description">
-            Track the work that needs attention and keep delivery moving.
-          </p>
+    <div className="landing-page">
+      <header className="landing-header">
+        <div className="landing-header-inner">
+          <Link className="brand landing-brand" href="/" aria-label="AMR Hub home">
+            <span className="brand-mark">A</span>
+            <span>
+              <strong>AMR Hub</strong>
+              <small>Product delivery</small>
+            </span>
+          </Link>
+
+          <nav className="landing-nav" aria-label="Landing page navigation">
+            <a href="#triage">Triage</a>
+            <a href="#cycles">Cycles</a>
+            <a href="#security">Security</a>
+          </nav>
+
+          <div className="landing-header-actions">
+            <Link className="landing-signin" href="/login">
+              Sign in
+            </Link>
+            <Link className="landing-header-cta" href="/signup">
+              Create workspace
+              <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
-        <Link className="primary-button" href="/issues/new">
-          <Plus size={16} aria-hidden="true" />
-          New issue
-        </Link>
       </header>
 
-      <section className="metrics-grid" aria-label="Workspace summary">
-        <article className="metric-card">
-          <span className="metric-icon metric-icon-blue">
-            <Inbox size={18} aria-hidden="true" />
-          </span>
-          <span className="metric-label">Active issues</span>
-          <strong className="metric-value">{active}</strong>
-          <span className="metric-note">
-            <TrendingUp size={14} aria-hidden="true" />
-            {addedThisWeek} added this week
-          </span>
-        </article>
-        <article className="metric-card">
-          <span className="metric-icon metric-icon-amber">
-            <Clock3 size={18} aria-hidden="true" />
-          </span>
-          <span className="metric-label">In progress</span>
-          <strong className="metric-value">{inProgress}</strong>
-          <span className="metric-note neutral">
-            Across {activeOwners} {activeOwners === 1 ? "owner" : "owners"}
-          </span>
-        </article>
-        <article className="metric-card">
-          <span className="metric-icon metric-icon-green">
-            <CircleCheck size={18} aria-hidden="true" />
-          </span>
-          <span className="metric-label">Completion rate</span>
-          <strong className="metric-value">{completionRate}%</strong>
-          <span className="metric-note positive">
-            {completed} of {issues.length} issues
-          </span>
-        </article>
-        <article className="metric-card">
-          <span className="metric-icon metric-icon-red">
-            <Flame size={18} aria-hidden="true" />
-          </span>
-          <span className="metric-label">Urgent</span>
-          <strong className="metric-value">{urgent}</strong>
-          <span className="metric-note neutral">Needs attention today</span>
-        </article>
-      </section>
-
-      <section className="dashboard-grid">
-        <article className="panel throughput-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Work pulse</h2>
-              <p>Issues opened and completed over the last 7 days</p>
+      <main>
+        <section className="landing-hero">
+          <div className="landing-hero-copy">
+            <p className="landing-kicker">
+              <Activity size={14} aria-hidden="true" />
+              Product operations in one focused workspace
+            </p>
+            <h1>AMR Hub</h1>
+            <p className="landing-hero-statement">
+              See what needs attention, decide what ships next, and keep every
+              handoff accountable.
+            </p>
+            <div className="landing-hero-actions">
+              <Link className="landing-primary-cta" href="/signup">
+                Start a workspace
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+              <Link className="landing-secondary-cta" href="/dashboard">
+                Open your workspace
+              </Link>
             </div>
-            <div className="chart-legend" aria-label="Chart legend">
-              <span><i className="legend-opened" />Opened</span>
-              <span><i className="legend-closed" />Completed</span>
-            </div>
+            <p className="landing-trust-line">
+              <ShieldCheck size={15} aria-hidden="true" />
+              Tenant-isolated data, revocable sessions, and two-factor protection
+            </p>
           </div>
-          <div className="bar-chart" aria-label="Weekly issue throughput chart">
-            {throughput.map((point) => (
-              <div className="bar-group" key={point.day}>
-                <div className="bars">
-                  <span
-                    className="bar bar-opened"
-                    style={{
-                      height: `${Math.max(
-                        4,
-                        (point.opened / largestThroughput) * 84,
-                      )}px`,
-                    }}
-                    title={`${point.opened} opened`}
-                  />
-                  <span
-                    className="bar bar-closed"
-                    style={{
-                      height: `${Math.max(
-                        4,
-                        (point.closed / largestThroughput) * 84,
-                      )}px`,
-                    }}
-                    title={`${point.closed} completed`}
-                  />
+
+          <div className="landing-hero-scene" aria-hidden="true">
+            <div className="landing-scene-topbar">
+              <span className="landing-scene-mark">A</span>
+              <strong>AMR Product</strong>
+              <span className="landing-scene-search">Search workspace</span>
+              <span className="landing-scene-avatar">AR</span>
+            </div>
+            <div className="landing-scene-body">
+              <aside className="landing-scene-sidebar">
+                <span className="active">
+                  <Inbox size={13} />
+                  Issues
+                </span>
+                <span>
+                  <CalendarRange size={13} />
+                  Cycles
+                </span>
+                <span>
+                  <Bookmark size={13} />
+                  Views
+                </span>
+              </aside>
+              <div className="landing-scene-main">
+                <div className="landing-scene-heading">
+                  <div>
+                    <small>Workspace</small>
+                    <strong>Issues</strong>
+                  </div>
+                  <span>+ New issue</span>
                 </div>
-                <small>{point.day}</small>
+                <div className="landing-scene-tabs">
+                  <span className="active">Active 12</span>
+                  <span>Backlog 8</span>
+                  <span>Completed 34</span>
+                </div>
+                <div className="landing-scene-table">
+                  {heroIssues.map((issue) => (
+                    <div className="landing-scene-row" key={issue.id}>
+                      <i className={`landing-priority-dot ${issue.priorityClass}`} />
+                      <span className="landing-scene-issue">
+                        <small>{issue.id}</small>
+                        <strong>{issue.title}</strong>
+                      </span>
+                      <span className={`landing-scene-priority ${issue.priorityClass}`}>
+                        {issue.priority}
+                      </span>
+                      <span className={`landing-scene-status ${issue.statusClass}`}>
+                        {issue.status}
+                      </span>
+                      <span className="landing-scene-owner">{issue.owner}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="landing-scene-pulse">
+                  <div>
+                    <small>Cycle 30</small>
+                    <strong>18 / 26 points</strong>
+                  </div>
+                  <span>
+                    <i style={{ height: "42%" }} />
+                    <i style={{ height: "58%" }} />
+                    <i style={{ height: "48%" }} />
+                    <i style={{ height: "76%" }} />
+                    <i style={{ height: "64%" }} />
+                    <i style={{ height: "88%" }} />
+                    <i style={{ height: "72%" }} />
+                  </span>
+                </div>
               </div>
-            ))}
+            </div>
           </div>
-        </article>
+        </section>
 
-        <article className="panel cycle-panel">
-          {currentCycle && cycleMetrics ? (
-            <>
-              <div className="panel-header">
-                <div>
-                  <p className="eyebrow">{currentCycle.name}</p>
-                  <h2>{formatCycleDateRange(currentCycle)}</h2>
-                </div>
-                <span className="cycle-day">
-                  Day {cycleMetrics.elapsedDays} of {cycleMetrics.totalDays}
+        <section className="landing-capability-strip" aria-label="Core capabilities">
+          <div className="landing-section-inner">
+            <div>
+              <Inbox size={17} aria-hidden="true" />
+              <span>
+                <strong>Decide from one queue</strong>
+                <small>Priority, owner, due date, and status stay visible.</small>
+              </span>
+            </div>
+            <div>
+              <Gauge size={17} aria-hidden="true" />
+              <span>
+                <strong>Commit with capacity</strong>
+                <small>Plan cycle scope before it becomes a promise.</small>
+              </span>
+            </div>
+            <div>
+              <LockKeyhole size={17} aria-hidden="true" />
+              <span>
+                <strong>Control every session</strong>
+                <small>Protect accounts and revoke access by device.</small>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-feature-section" id="triage">
+          <div className="landing-section-inner landing-feature-grid">
+            <div className="landing-feature-copy">
+              <span className="landing-section-number">01 / Triage</span>
+              <h2>A decision surface, not a backlog graveyard.</h2>
+              <p>
+                Scan urgency, ownership, workflow state, labels, and due dates
+                without opening every issue. Save the exact view that support,
+                product, or engineering needs next.
+              </p>
+              <ul className="landing-check-list">
+                <li>
+                  <Check size={15} aria-hidden="true" />
+                  Filter and search without losing delivery context
+                </li>
+                <li>
+                  <Check size={15} aria-hidden="true" />
+                  Update status directly from the issue queue
+                </li>
+                <li>
+                  <Check size={15} aria-hidden="true" />
+                  Reuse personal views for recurring triage
+                </li>
+              </ul>
+            </div>
+
+            <div className="landing-triage-demo" aria-label="Issue triage preview">
+              <div className="landing-demo-toolbar">
+                <span>
+                  <ListFilter size={14} aria-hidden="true" />
+                  Support triage
+                </span>
+                <span>
+                  <Tag size={14} aria-hidden="true" />
+                  All labels
                 </span>
               </div>
-              <div
-                className="progress-ring"
-                style={
-                  {
-                    "--progress": `${cycleMetrics.completionPercent}%`,
-                  } as React.CSSProperties
-                }
-              >
+              <div className="landing-demo-summary">
+                <strong>Active issues</strong>
+                <span>12 in this view</span>
+              </div>
+              <div className="landing-demo-head" aria-hidden="true">
+                <span>Issue</span>
+                <span>Owner</span>
+                <span>Due</span>
+              </div>
+              {triageIssues.map((issue) => (
+                <div className="landing-demo-row" key={issue.id}>
+                  <span className="landing-demo-issue">
+                    <small>{issue.id}</small>
+                    <strong>{issue.title}</strong>
+                    <i className={issue.labelClass}>{issue.label}</i>
+                  </span>
+                  <span>{issue.owner}</span>
+                  <time className={issue.due === "Today" ? "due" : ""}>
+                    {issue.due}
+                  </time>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-cycle-section" id="cycles">
+          <div className="landing-section-inner landing-cycle-grid">
+            <div className="landing-cycle-visual" aria-label="Cycle capacity preview">
+              <div className="landing-cycle-visual-head">
                 <span>
-                  <strong>{cycleMetrics.completionPercent}%</strong>
+                  <small>Current cycle</small>
+                  <strong>Cycle 30</strong>
+                </span>
+                <span>Day 6 of 10</span>
+              </div>
+              <div className="landing-cycle-meter">
+                <span>
+                  <strong>69%</strong>
                   <small>complete</small>
                 </span>
               </div>
-              <div className="cycle-stats">
+              <div className="landing-cycle-stats">
                 <span>
-                  <strong>{cycleMetrics.completedPoints}</strong>
+                  <strong>18</strong>
                   <small>Completed</small>
                 </span>
                 <span>
-                  <strong>{cycleMetrics.remainingPoints}</strong>
+                  <strong>8</strong>
                   <small>Remaining</small>
                 </span>
                 <span>
-                  <strong>{cycleMetrics.atRisk}</strong>
+                  <strong>2</strong>
                   <small>At risk</small>
                 </span>
               </div>
-              <div
-                className="linear-progress"
-                aria-label={`Cycle is ${cycleMetrics.completionPercent}% complete`}
-              >
-                <span
-                  style={{ width: `${cycleMetrics.completionPercent}%` }}
-                />
+              <div className="landing-capacity-track">
+                <span />
               </div>
-              <Link className="cycle-panel-link" href="/cycles">
-                View cycle plan <ArrowRight size={14} aria-hidden="true" />
-              </Link>
-            </>
-          ) : (
-            <div className="cycle-panel-empty">
-              <Clock3 size={22} aria-hidden="true" />
-              <h2>No active cycle</h2>
-              <Link className="text-link" href="/cycles">
-                Open cycle planning
-              </Link>
+              <small className="landing-capacity-note">
+                26 of 32 available points planned
+              </small>
             </div>
-          )}
-        </article>
-      </section>
 
-      <section className="dashboard-grid lower-grid">
-        <article className="panel recent-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Workspace activity</h2>
-              <p>Recent changes across every issue</p>
-            </div>
-            <Link className="text-link" href="/issues">
-              View all <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </div>
-          <WorkspaceActivity issues={issues} />
-        </article>
-
-        <article className="panel priority-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Priority mix</h2>
-              <p>All issues by priority</p>
+            <div className="landing-feature-copy landing-cycle-copy">
+              <span className="landing-section-number">02 / Delivery</span>
+              <h2>Capacity is visible before scope becomes a promise.</h2>
+              <p>
+                Cycles connect issue estimates to a delivery window, expose
+                unplanned work, and keep rollover risk visible while there is
+                still time to act.
+              </p>
+              <div className="landing-inline-points">
+                <span>
+                  <CalendarRange size={16} aria-hidden="true" />
+                  Time-boxed planning
+                </span>
+                <span>
+                  <Gauge size={16} aria-hidden="true" />
+                  Scope versus capacity
+                </span>
+                <span>
+                  <Clock3 size={16} aria-hidden="true" />
+                  At-risk due dates
+                </span>
+              </div>
             </div>
           </div>
-          <div className="priority-stack">
-            {priorityCounts.map((priority) => {
-              const percentage = Math.round(
-                (priority.value / Math.max(issues.length, 1)) * 100,
-              );
-              return (
-                <div className="priority-row" key={priority.label}>
+        </section>
+
+        <section className="landing-security-section" id="security">
+          <div className="landing-section-inner landing-security-grid">
+            <div className="landing-brand-visual">
+              <Image
+                src="/og.png"
+                width={1731}
+                height={909}
+                sizes="(max-width: 800px) 100vw, 48vw"
+                alt="AMR Hub workspace overview with delivery chart and issue list"
+              />
+            </div>
+
+            <div className="landing-feature-copy">
+              <span className="landing-section-number">03 / Access</span>
+              <h2>The workspace boundary is part of the product.</h2>
+              <p>
+                Every organization gets isolated issues, cycles, labels, and
+                views. Owners control invitations and member access, while each
+                person can inspect and revoke signed-in devices.
+              </p>
+              <div className="landing-security-list">
+                <div>
+                  <UsersRound size={17} aria-hidden="true" />
                   <span>
-                    <i style={{ background: priority.color }} />
-                    {priority.label}
+                    <strong>Organization isolation</strong>
+                    <small>Workspace data follows active membership.</small>
                   </span>
-                  <div className="priority-bar">
-                    <i
-                      style={{
-                        width: `${percentage}%`,
-                        background: priority.color,
-                      }}
-                    />
-                  </div>
-                  <strong>{priority.value}</strong>
                 </div>
-              );
-            })}
+                <div>
+                  <KeyRound size={17} aria-hidden="true" />
+                  <span>
+                    <strong>Layered account recovery</strong>
+                    <small>TOTP, backup codes, and offline recovery codes.</small>
+                  </span>
+                </div>
+                <div>
+                  <MessageSquareText size={17} aria-hidden="true" />
+                  <span>
+                    <strong>Accountable activity</strong>
+                    <small>Issue discussions and changes stay with the work.</small>
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        </article>
-      </section>
+        </section>
+
+        <section className="landing-final-cta">
+          <div className="landing-section-inner">
+            <span>
+              <CircleCheck size={19} aria-hidden="true" />
+              Ready for the next product decision
+            </span>
+            <h2>Give important work a clear next move.</h2>
+            <p>
+              Create the organization, invite the team, and start with an empty
+              workspace that belongs only to you.
+            </p>
+            <div className="landing-final-actions">
+              <Link className="landing-primary-cta" href="/signup">
+                Create your workspace
+                <ArrowRight size={17} aria-hidden="true" />
+              </Link>
+              <Link className="landing-secondary-light" href="/login">
+                Sign in
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="landing-footer">
+        <div className="landing-section-inner">
+          <Link className="brand" href="/">
+            <span className="brand-mark">A</span>
+            <strong>AMR Hub</strong>
+          </Link>
+          <p>Issue triage and delivery planning for focused software teams.</p>
+          <div>
+            <Link href="/login">Sign in</Link>
+            <Link href="/signup">Create workspace</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

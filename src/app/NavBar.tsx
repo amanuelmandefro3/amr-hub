@@ -14,7 +14,7 @@ import {
 import { authClient } from "../lib/auth-client";
 
 const links = [
-  { label: "Overview", href: "/", icon: LayoutDashboard },
+  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Issues", href: "/issues", icon: ListTodo },
   { label: "Cycles", href: "/cycles", icon: CalendarRange },
 ];
@@ -45,8 +45,7 @@ export default function NavBar() {
     return () => window.removeEventListener("keydown", openCreateIssue);
   }, [router]);
 
-  const isActive = (href: string) =>
-    href === "/" ? currentPath === href : currentPath.startsWith(href);
+  const isActive = (href: string) => currentPath.startsWith(href);
 
   const userName = session?.user.name ?? "Workspace member";
   const initials = userName
@@ -118,7 +117,7 @@ export default function NavBar() {
       </aside>
 
       <header className="mobile-header">
-        <Link href="/" className="brand" aria-label="AMR Hub overview">
+        <Link href="/dashboard" className="brand" aria-label="AMR Hub overview">
           <span className="brand-mark">A</span>
           <strong>AMR Hub</strong>
         </Link>
