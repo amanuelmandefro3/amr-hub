@@ -76,7 +76,7 @@ export default function LoginPage() {
     <div className="auth-layout">
       <section className="auth-form-pane">
         <div className="auth-form-wrap">
-          <Link className="brand auth-brand" href="/login">
+          <Link className="brand auth-brand" href="/" aria-label="AMR Hub home">
             <span className="brand-mark">A</span>
             <span>
               <strong>AMR Hub</strong>

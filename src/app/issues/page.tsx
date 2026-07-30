@@ -232,6 +232,8 @@ export default function IssuesPage() {
         <button
           className="secondary-button"
           type="button"
+          aria-label="Save current issue view"
+          title="Save current view"
           onClick={() => {
             setViewError(null);
             setIsSaveViewOpen(true);

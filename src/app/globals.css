@@ -16,19 +16,27 @@
   --gray-900: #15191f;
   --green-50: #edf8f2;
   --green-100: #d8f0e3;
+  --green-200: #b9e2cc;
+  --green-300: #8fd1ae;
+  --green-400: #57ad7d;
   --green-500: #2a8a5b;
   --green-600: #207149;
+  --green-700: #185739;
   --blue-50: #eef5ff;
+  --blue-200: #c9ddf8;
   --blue-500: #3978d2;
   --blue-600: #2e64b3;
   --amber-50: #fff7e8;
+  --amber-200: #f1d69f;
   --amber-500: #d18a20;
   --amber-600: #ad6d13;
   --red-50: #fff0ef;
   --red-200: #f3c7c4;
+  --red-300: #e5a5a1;
   --red-500: #d8514d;
   --red-600: #b83c38;
   --red-700: #8f2f2c;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --sidebar-width: 244px;
   --radius: 7px;
 }
@@ -3800,7 +3808,7 @@ h2 {
 
 .organization-key-input {
   max-width: 112px;
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-mono);
   font-weight: 700;
 }
 
@@ -3860,7 +3868,7 @@ h2 {
 
 .challenge-input input {
   padding-left: 38px;
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-mono);
   letter-spacing: 0;
 }
 
@@ -4425,7 +4433,7 @@ h2 {
 }
 
 .recovery-code-input {
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-mono);
   font-size: 11px !important;
   letter-spacing: 0;
 }
@@ -5403,6 +5411,17 @@ h2 {
     width: 100%;
   }
 
+  .saved-views-bar > label {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .saved-views-bar .secondary-button {
+    width: 34px;
+    padding: 0;
+    font-size: 0;
+  }
+
   .mobile-header {
     padding: 0 12px;
   }
@@ -5499,7 +5518,8 @@ h2 {
   }
 
   .cycle-scope-row {
-    grid-template-columns: minmax(150px, 1fr) 88px 45px;
+    grid-template-columns: minmax(0, 1fr) 82px 38px;
+    gap: 7px;
     padding-right: 15px;
     padding-left: 15px;
   }
