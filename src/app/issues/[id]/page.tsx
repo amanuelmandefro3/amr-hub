@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useIssues } from "../../IssueProvider";
+import { authClient } from "../../../lib/auth-client";
 import {
   KIND_LABELS,
   PRIORITY_LABELS,
@@ -177,6 +178,10 @@ function IssueDetail({
     updates: IssueUpdates,
   ) => Promise<boolean>;
 }) {
+  const { data: session } = authClient.useSession();
+  const currentUserInitials = session?.user.name
+    ? getInitials(session.user.name)
+    : "?";
   const [comment, setComment] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -184,14 +189,7 @@ function IssueDetail({
   const [draftTitle, setDraftTitle] = useState(issue.title);
   const [draftDescription, setDraftDescription] = useState(issue.description);
   const comments = issue.comments ?? [];
-  const creationActivity: IssueActivity = {
-    id: `${issue.id}-created`,
-    type: "CREATED",
-    description: "created this issue",
-    actor: "Amanuel R.",
-    createdAt: issue.createdAt,
-  };
-  const activity = [creationActivity, ...(issue.activity ?? [])].sort(
+  const activity = [...(issue.activity ?? [])].sort(
     (left, right) =>
       new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
   );
@@ -360,7 +358,7 @@ function IssueDetail({
             </div>
 
             <form className="comment-form" onSubmit={handleComment}>
-              <span className="avatar avatar-green">AR</span>
+              <span className="avatar avatar-green">{currentUserInitials}</span>
               <label>
                 <span className="sr-only">Add a comment</span>
                 <textarea
