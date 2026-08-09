@@ -88,3 +88,10 @@ export function organizationRequiredResponse() {
     { status: 409 },
   );
 }
+
+export function viewerForbiddenResponse() {
+  return NextResponse.json(
+    { error: "Viewers have read-only access to this workspace" },
+    { status: 403 },
+  );
+}

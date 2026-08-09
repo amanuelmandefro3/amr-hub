@@ -28,11 +28,18 @@ type WorkspaceAccess = {
     id: string;
     email: string;
     status: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
+    role: string;
     expiresAt: string;
     createdAt: string;
     invitedBy: string;
   }>;
 };
+
+function roleLabel(role: string) {
+  if (role === "OWNER") return "Owner";
+  if (role === "VIEWER") return "Viewer";
+  return "Member";
+}
 
 export default function AccountPage() {
   const { data: session, refetch: refetchSession } = authClient.useSession();
@@ -45,6 +52,7 @@ export default function AccountPage() {
   const [workspaceAccess, setWorkspaceAccess] =
     useState<WorkspaceAccess | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"member" | "viewer">("member");
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [inviteStatus, setInviteStatus] = useState<string | null>(null);
   const [isInviting, setIsInviting] = useState(false);
@@ -124,7 +132,7 @@ export default function AccountPage() {
     const response = await fetch("/api/invitations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: inviteEmail.trim() }),
+      body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
     });
     const result = (await response.json().catch(() => null)) as {
       error?: string;
@@ -139,6 +147,7 @@ export default function AccountPage() {
 
     setInviteUrl(result.inviteUrl);
     setInviteEmail("");
+    setInviteRole("member");
     setInviteStatus(
       "Invitation link created. It is shown once, so copy it now.",
     );
@@ -340,6 +349,18 @@ export default function AccountPage() {
                   required
                 />
               </label>
+              <label className="form-field">
+                <span>Access level</span>
+                <select
+                  value={inviteRole}
+                  onChange={(event) =>
+                    setInviteRole(event.target.value as "member" | "viewer")
+                  }
+                >
+                  <option value="member">Member — can create and edit</option>
+                  <option value="viewer">Viewer — read only</option>
+                </select>
+              </label>
               <button
                 className="primary-button"
                 type="submit"
@@ -408,10 +429,8 @@ export default function AccountPage() {
                       <strong>{user.name}</strong>
                       <span>{user.email}</span>
                     </span>
-                    <span className="team-role">
-                      {user.role === "OWNER" ? "Owner" : "Member"}
-                    </span>
-                    {user.role === "MEMBER" && (
+                    <span className="team-role">{roleLabel(user.role)}</span>
+                    {user.role !== "OWNER" && (
                       <button
                         className="icon-button danger"
                         type="button"
@@ -456,6 +475,9 @@ export default function AccountPage() {
                             invitation.createdAt,
                           ).toLocaleDateString()}
                         </span>
+                      </span>
+                      <span className="team-role">
+                        {roleLabel(invitation.role)}
                       </span>
                       <span
                         className={`invitation-status invitation-${invitation.status.toLowerCase()}`}

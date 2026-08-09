@@ -11,6 +11,7 @@ import {
   getWorkspaceSession,
   organizationRequiredResponse,
   unauthorizedResponse,
+  viewerForbiddenResponse,
 } from "../../../../server/session";
 
 type RouteContext = {
@@ -21,6 +22,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
   if (!session.workspace) return organizationRequiredResponse();
+  if (session.workspace.role === "viewer") return viewerForbiddenResponse();
 
   try {
     const validation = updateIssueSchema.safeParse(await request.json());

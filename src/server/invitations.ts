@@ -39,11 +39,13 @@ function invitationState(
   return invitation.status;
 }
 
+const ROLE_RANK: Record<string, number> = { owner: 0, member: 1, viewer: 2 };
+
 export async function listWorkspaceAccess(organizationId: string) {
   const [members, invitations] = await Promise.all([
     prisma.member.findMany({
       where: { organizationId },
-      orderBy: [{ role: "desc" }, { createdAt: "asc" }],
+      orderBy: { createdAt: "asc" },
       include: {
         user: {
           select: {
@@ -67,8 +69,13 @@ export async function listWorkspaceAccess(organizationId: string) {
     }),
   ]);
 
+  const sortedMembers = [...members].sort(
+    (left, right) =>
+      (ROLE_RANK[left.role] ?? 99) - (ROLE_RANK[right.role] ?? 99),
+  );
+
   return {
-    users: members.map((member) => ({
+    users: sortedMembers.map((member) => ({
       ...member.user,
       role: member.role.toUpperCase(),
       createdAt: member.createdAt.toISOString(),
@@ -77,6 +84,7 @@ export async function listWorkspaceAccess(organizationId: string) {
       id: invitation.id,
       email: invitation.email,
       status: invitationState(invitation),
+      role: invitation.role.toUpperCase(),
       expiresAt: invitation.expiresAt.toISOString(),
       createdAt: invitation.createdAt.toISOString(),
       invitedBy: invitation.inviter.name,
@@ -89,6 +97,7 @@ export async function createMemberInvitation(
   invitedBy: string,
   origin: string,
   organizationId: string,
+  role: "member" | "viewer" = "member",
 ) {
   const normalizedEmail = normalizeInvitationEmail(email);
   const token = createInvitationToken();
@@ -116,6 +125,7 @@ export async function createMemberInvitation(
           id: randomUUID(),
           email: normalizedEmail,
           tokenHash: hashInvitationToken(token),
+          role,
           expiresAt,
           invitedBy,
           organizationId,
@@ -128,6 +138,7 @@ export async function createMemberInvitation(
         id: invitation.id,
         email: invitation.email,
         status: invitation.status,
+        role: invitation.role,
         expiresAt: invitation.expiresAt.toISOString(),
         createdAt: invitation.createdAt.toISOString(),
       },
@@ -165,6 +176,7 @@ export async function getInvitation(token: string) {
     email: invitation.email,
     invitedBy: invitation.inviter.name,
     organizationName: invitation.organization.name,
+    role: invitation.role,
     expiresAt: invitation.expiresAt.toISOString(),
   };
 }
@@ -234,7 +246,7 @@ export async function acceptMemberInvitation(input: {
           id: randomUUID(),
           userId,
           organizationId: invitation.organizationId,
-          role: "member",
+          role: invitation.role,
           createdAt: now,
         },
       });

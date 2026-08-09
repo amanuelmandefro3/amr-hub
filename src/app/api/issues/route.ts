@@ -15,6 +15,7 @@ import {
   getWorkspaceSession,
   organizationRequiredResponse,
   unauthorizedResponse,
+  viewerForbiddenResponse,
 } from "../../../server/session";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
   const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
   if (!session.workspace) return organizationRequiredResponse();
+  if (session.workspace.role === "viewer") return viewerForbiddenResponse();
 
   try {
     const validation = createIssueSchema.safeParse(await request.json());

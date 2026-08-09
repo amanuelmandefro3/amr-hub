@@ -19,6 +19,7 @@ type InvitationDetails = {
   email: string;
   invitedBy: string;
   organizationName: string;
+  role: "member" | "viewer";
   expiresAt: string;
 };
 
@@ -205,7 +206,8 @@ export default function InvitationPage({
             <h1>Join {invitation.organizationName}</h1>
             <p>
               {invitation.invitedBy} invited{" "}
-              <strong>{invitation.email}</strong> as a workspace member.
+              <strong>{invitation.email}</strong> as a workspace{" "}
+              {invitation.role === "viewer" ? "viewer" : "member"}.
             </p>
           </div>
         </div>

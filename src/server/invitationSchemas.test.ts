@@ -6,13 +6,22 @@ import {
 } from "./invitationSchemas";
 
 describe("invitation schemas", () => {
-  it("normalizes valid invitation emails", () => {
+  it("normalizes valid invitation emails and defaults to the member role", () => {
     expect(
       createInvitationSchema.parse({ email: "  MEMBER@Example.com " }),
-    ).toEqual({ email: "MEMBER@Example.com" });
+    ).toEqual({ email: "MEMBER@Example.com", role: "member" });
   });
 
-  it("rejects unknown invitation fields", () => {
+  it("accepts an explicit viewer role", () => {
+    expect(
+      createInvitationSchema.safeParse({
+        email: "viewer@example.com",
+        role: "viewer",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects unknown invitation roles", () => {
     expect(
       createInvitationSchema.safeParse({
         email: "member@example.com",

@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { apiRequest, useIssues, type IssueListResponse } from "../IssueProvider";
+import { authClient } from "../../lib/auth-client";
 import {
   PRIORITY_LABELS,
   STATUS_LABELS,
@@ -106,6 +107,8 @@ export default function IssuesPage() {
     createSavedView,
     deleteSavedView,
   } = useIssues();
+  const { data: activeMember } = authClient.useActiveMember();
+  const isViewer = activeMember?.role === "viewer";
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
@@ -305,10 +308,12 @@ export default function IssuesPage() {
             Prioritize, assign, and move work through delivery.
           </p>
         </div>
-        <Link className="primary-button" href="/issues/new">
-          <Plus size={16} aria-hidden="true" />
-          New issue
-        </Link>
+        {!isViewer && (
+          <Link className="primary-button" href="/issues/new">
+            <Plus size={16} aria-hidden="true" />
+            New issue
+          </Link>
+        )}
       </header>
 
       <div className="saved-views-bar">
@@ -498,6 +503,7 @@ export default function IssuesPage() {
                 <i />
                 <select
                   value={issue.status}
+                  disabled={isViewer}
                   onChange={(event) =>
                     void handleUpdateStatus(
                       issue.id,

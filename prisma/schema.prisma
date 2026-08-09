@@ -214,6 +214,7 @@ model Invitation {
   email          String
   tokenHash      String       @unique
   status         String       @default("PENDING")
+  role           String       @default("member")
   expiresAt      DateTime
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

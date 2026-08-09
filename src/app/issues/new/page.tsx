@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, CircleAlert, Sparkles } from "lucide-react";
 import { useIssues } from "../../IssueProvider";
+import { authClient } from "../../../lib/auth-client";
 import { IssueLabelChip } from "../../components/IssueLabelChip";
 import {
   KIND_LABELS,
@@ -25,6 +26,14 @@ type FormErrors = {
 export default function NewIssuePage() {
   const router = useRouter();
   const { createIssue, labels, cycles, members } = useIssues();
+  const { data: activeMember } = authClient.useActiveMember();
+
+  useEffect(() => {
+    if (activeMember?.role === "viewer") {
+      router.replace("/issues");
+    }
+  }, [activeMember?.role, router]);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<IssuePriority>("MEDIUM");

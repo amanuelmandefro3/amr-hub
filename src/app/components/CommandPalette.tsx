@@ -12,6 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useIssues } from "../IssueProvider";
+import { authClient } from "../../lib/auth-client";
 
 type PaletteResult = {
   id: string;
@@ -33,6 +34,8 @@ const STATIC_COMMANDS: PaletteResult[] = [
 export function CommandPalette() {
   const router = useRouter();
   const { issues } = useIssues();
+  const { data: activeMember } = authClient.useActiveMember();
+  const isViewer = activeMember?.role === "viewer";
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -74,7 +77,11 @@ export function CommandPalette() {
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
 
-    const commandResults: PaletteResult[] = STATIC_COMMANDS.filter(
+    const availableCommands = isViewer
+      ? STATIC_COMMANDS.filter((command) => command.id !== "new-issue")
+      : STATIC_COMMANDS;
+
+    const commandResults: PaletteResult[] = availableCommands.filter(
       (command) => !normalized || command.label.toLowerCase().includes(normalized),
     );
 
@@ -97,7 +104,7 @@ export function CommandPalette() {
       : [];
 
     return [...commandResults, ...issueResults];
-  }, [issues, query]);
+  }, [issues, query, isViewer]);
 
   useEffect(() => {
     const resetActiveIndex = () => setActiveIndex(0);

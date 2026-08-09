@@ -179,6 +179,8 @@ function IssueDetail({
   ) => Promise<boolean>;
 }) {
   const { data: session } = authClient.useSession();
+  const { data: activeMember } = authClient.useActiveMember();
+  const isViewer = activeMember?.role === "viewer";
   const currentUserInitials = session?.user.name
     ? getInitials(session.user.name)
     : "?";
@@ -267,14 +269,16 @@ function IssueDetail({
                 </button>
               </>
             ) : (
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={startEditing}
-              >
-                <Pencil size={15} aria-hidden="true" />
-                Edit
-              </button>
+              !isViewer && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={startEditing}
+                >
+                  <Pencil size={15} aria-hidden="true" />
+                  Edit
+                </button>
+              )
             )}
           </div>
         </div>
@@ -357,27 +361,29 @@ function IssueDetail({
               ))}
             </div>
 
-            <form className="comment-form" onSubmit={handleComment}>
-              <span className="avatar avatar-green">{currentUserInitials}</span>
-              <label>
-                <span className="sr-only">Add a comment</span>
-                <textarea
-                  value={comment}
-                  onChange={(event) => setComment(event.target.value)}
-                  placeholder="Add context, an update, or a question..."
-                  rows={3}
-                  maxLength={1000}
-                />
-              </label>
-              <button
-                className="primary-button"
-                type="submit"
-                disabled={comment.trim().length < 2 || isCommenting}
-              >
-                <Send size={15} aria-hidden="true" />
-                {isCommenting ? "Posting..." : "Comment"}
-              </button>
-            </form>
+            {!isViewer && (
+              <form className="comment-form" onSubmit={handleComment}>
+                <span className="avatar avatar-green">{currentUserInitials}</span>
+                <label>
+                  <span className="sr-only">Add a comment</span>
+                  <textarea
+                    value={comment}
+                    onChange={(event) => setComment(event.target.value)}
+                    placeholder="Add context, an update, or a question..."
+                    rows={3}
+                    maxLength={1000}
+                  />
+                </label>
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={comment.trim().length < 2 || isCommenting}
+                >
+                  <Send size={15} aria-hidden="true" />
+                  {isCommenting ? "Posting..." : "Comment"}
+                </button>
+              </form>
+            )}
           </section>
 
           <section className="panel activity-panel">
@@ -419,6 +425,7 @@ function IssueDetail({
                 <span className="sr-only">Issue status</span>
                 <select
                   value={issue.status}
+                  disabled={isViewer}
                   onChange={(event) =>
                     onUpdateIssue(issue.id, {
                       status: event.target.value as IssueStatus,
@@ -439,6 +446,7 @@ function IssueDetail({
                 <span className="sr-only">Issue priority</span>
                 <select
                   value={issue.priority}
+                  disabled={isViewer}
                   onChange={(event) =>
                     onUpdateIssue(issue.id, {
                       priority: event.target.value as IssuePriority,
@@ -459,6 +467,7 @@ function IssueDetail({
                 <span className="sr-only">Issue type</span>
                 <select
                   value={issue.kind}
+                  disabled={isViewer}
                   onChange={(event) =>
                     onUpdateIssue(issue.id, {
                       kind: event.target.value as IssueKind,
@@ -481,6 +490,7 @@ function IssueDetail({
                 <span className="sr-only">Issue assignee</span>
                 <select
                   value={issue.assignee?.id ?? ""}
+                  disabled={isViewer}
                   onChange={(event) =>
                     onUpdateIssue(issue.id, {
                       assigneeId: event.target.value || null,
@@ -503,6 +513,7 @@ function IssueDetail({
                 <input
                   type="date"
                   value={issue.dueDate?.slice(0, 10) ?? ""}
+                  disabled={isViewer}
                   onChange={(event) =>
                     onUpdateIssue(issue.id, {
                       dueDate: event.target.value || null,
@@ -517,6 +528,7 @@ function IssueDetail({
                 <span className="sr-only">Issue cycle</span>
                 <select
                   value={issue.cycleId ?? ""}
+                  disabled={isViewer}
                   onChange={(event) =>
                     onUpdateIssue(issue.id, {
                       cycleId: event.target.value || null,
@@ -538,6 +550,7 @@ function IssueDetail({
                 <span className="sr-only">Issue estimate</span>
                 <select
                   value={issue.estimate ?? ""}
+                  disabled={isViewer}
                   onChange={(event) =>
                     onUpdateIssue(issue.id, {
                       estimate: event.target.value
@@ -567,6 +580,7 @@ function IssueDetail({
                       <input
                         type="checkbox"
                         checked={checked}
+                        disabled={isViewer}
                         onChange={(event) => {
                           const currentIds = issue.labels.map(
                             (issueLabel) => issueLabel.id,

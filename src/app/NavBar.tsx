@@ -27,8 +27,11 @@ export default function NavBar() {
   const { data: session } = authClient.useSession();
   const { data: activeOrganization } = authClient.useActiveOrganization();
   const { data: activeMember } = authClient.useActiveMember();
+  const isViewer = activeMember?.role === "viewer";
 
   useEffect(() => {
+    if (isViewer) return;
+
     const openCreateIssue = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const isEditing =
@@ -45,7 +48,7 @@ export default function NavBar() {
 
     window.addEventListener("keydown", openCreateIssue);
     return () => window.removeEventListener("keydown", openCreateIssue);
-  }, [router]);
+  }, [router, isViewer]);
 
   const isActive = (href: string) => currentPath.startsWith(href);
 
@@ -76,11 +79,13 @@ export default function NavBar() {
 
         <CommandPaletteHint />
 
-        <Link className="new-issue-button" href="/issues/new">
-          <Plus size={16} strokeWidth={2.2} aria-hidden="true" />
-          New issue
-          <kbd>C</kbd>
-        </Link>
+        {!isViewer && (
+          <Link className="new-issue-button" href="/issues/new">
+            <Plus size={16} strokeWidth={2.2} aria-hidden="true" />
+            New issue
+            <kbd>C</kbd>
+          </Link>
+        )}
 
         <nav className="primary-nav" aria-label="Primary navigation">
           <span className="nav-label">Workspace</span>
@@ -105,7 +110,9 @@ export default function NavBar() {
             <small>
               {activeMember?.role === "owner"
                 ? "Workspace owner"
-                : "Workspace member"}
+                : isViewer
+                  ? "Workspace viewer"
+                  : "Workspace member"}
             </small>
           </Link>
           <ThemeToggle />
@@ -138,13 +145,15 @@ export default function NavBar() {
             </Link>
           ))}
           <ThemeToggle />
-          <Link
-            href="/issues/new"
-            className="mobile-create-button"
-            aria-label="Create issue"
-          >
-            <Plus size={19} aria-hidden="true" />
-          </Link>
+          {!isViewer && (
+            <Link
+              href="/issues/new"
+              className="mobile-create-button"
+              aria-label="Create issue"
+            >
+              <Plus size={19} aria-hidden="true" />
+            </Link>
+          )}
           <Link
             href="/account"
             className={

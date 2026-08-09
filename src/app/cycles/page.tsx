@@ -10,6 +10,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useIssues } from "../IssueProvider";
+import { authClient } from "../../lib/auth-client";
 import { PriorityBadge, StatusBadge } from "../components/IssueVisuals";
 import { WorkspaceLoading } from "../components/WorkspaceLoading";
 import {
@@ -28,6 +29,8 @@ const PHASE_LABELS: Record<CyclePhase, string> = {
 
 export default function CyclesPage() {
   const { cycles, issues, isLoading } = useIssues();
+  const { data: activeMember } = authClient.useActiveMember();
+  const isViewer = activeMember?.role === "viewer";
   const now = new Date();
 
   if (isLoading) {
@@ -50,10 +53,12 @@ export default function CyclesPage() {
             Balance scope against capacity and keep committed work visible.
           </p>
         </div>
-        <Link className="primary-button" href="/issues/new">
-          <Plus size={16} aria-hidden="true" />
-          New issue
-        </Link>
+        {!isViewer && (
+          <Link className="primary-button" href="/issues/new">
+            <Plus size={16} aria-hidden="true" />
+            New issue
+          </Link>
+        )}
       </header>
 
       {activeCycle && activeMetrics ? (

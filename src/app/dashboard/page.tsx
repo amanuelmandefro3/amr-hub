@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useIssues } from "../IssueProvider";
+import { authClient } from "../../lib/auth-client";
 import { WorkspaceActivity } from "../components/WorkspaceActivity";
 import { WorkspaceLoading } from "../components/WorkspaceLoading";
 import {
@@ -72,6 +73,8 @@ function buildThroughput(issues: Issue[], now: Date) {
 
 export default function Home() {
   const { issues, cycles, isLoading } = useIssues();
+  const { data: activeMember } = authClient.useActiveMember();
+  const isViewer = activeMember?.role === "viewer";
 
   if (isLoading) {
     return <WorkspaceLoading label="overview" />;
@@ -142,10 +145,12 @@ export default function Home() {
             Track the work that needs attention and keep delivery moving.
           </p>
         </div>
-        <Link className="primary-button" href="/issues/new">
-          <Plus size={16} aria-hidden="true" />
-          New issue
-        </Link>
+        {!isViewer && (
+          <Link className="primary-button" href="/issues/new">
+            <Plus size={16} aria-hidden="true" />
+            New issue
+          </Link>
+        )}
       </header>
 
       <section className="metrics-grid" aria-label="Workspace summary">

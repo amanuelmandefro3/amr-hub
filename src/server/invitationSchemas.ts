@@ -7,9 +7,12 @@ export const invitationTokenSchema = z
   .max(128)
   .regex(/^[A-Za-z0-9_-]+$/);
 
+export const invitationRoleSchema = z.enum(["member", "viewer"]);
+
 export const createInvitationSchema = z
   .object({
     email: z.string().trim().email().max(254),
+    role: invitationRoleSchema.default("member"),
   })
   .strict();
 

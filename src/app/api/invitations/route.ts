@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       session.user.id,
       request.nextUrl.origin,
       session.workspace.id,
+      validation.data.role,
     );
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
