@@ -12,6 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { authClient } from "../lib/auth-client";
+import { CommandPaletteHint } from "./components/CommandPalette";
 import { ThemeToggle } from "./components/ThemeToggle";
 
 const links = [
@@ -72,6 +73,8 @@ export default function NavBar() {
             <small>{activeOrganization?.name ?? "Product workspace"}</small>
           </span>
         </div>
+
+        <CommandPaletteHint />
 
         <Link className="new-issue-button" href="/issues/new">
           <Plus size={16} strokeWidth={2.2} aria-hidden="true" />

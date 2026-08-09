@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { IssueProvider } from "./IssueProvider";
+import { CommandPalette } from "./components/CommandPalette";
 import NavBar from "./NavBar";
 
 const AUTH_ROUTES = [
@@ -34,6 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="app-shell">
         <NavBar />
         <main className="app-content">{children}</main>
+        <CommandPalette />
       </div>
     </IssueProvider>
   );
