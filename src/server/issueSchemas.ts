@@ -85,3 +85,18 @@ export const createCommentSchema = z
     body: z.string().trim().min(2).max(1000),
   })
   .strict();
+
+export const listIssuesQuerySchema = z.object({
+  status: z
+    .union([z.literal("ALL"), z.literal("ACTIVE"), issueStatusSchema])
+    .default("ALL"),
+  priority: z.union([z.literal("ALL"), issuePrioritySchema]).default("ALL"),
+  labelId: z.string().trim().min(1).max(80).optional(),
+  assigneeId: z.string().trim().min(1).max(80).optional(),
+  q: z.string().trim().max(100).optional(),
+  sort: z.enum(["NEWEST", "OLDEST"]).default("NEWEST"),
+  cursor: z.string().trim().min(1).max(120).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+export type ListIssuesQuery = z.infer<typeof listIssuesQuerySchema>;

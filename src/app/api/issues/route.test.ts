@@ -75,12 +75,49 @@ describe("/api/issues organization boundary", () => {
 
   it("lists only the active organization", async () => {
     mocks.getWorkspaceSession.mockResolvedValue(session);
-    mocks.listIssues.mockResolvedValue([]);
+    mocks.listIssues.mockResolvedValue({ issues: [], nextCursor: null });
 
     const response = await GET(request());
 
     expect(response.status).toBe(200);
-    expect(mocks.listIssues).toHaveBeenCalledWith("organization-1");
+    expect(mocks.listIssues).toHaveBeenCalledWith("organization-1", {
+      status: "ALL",
+      priority: "ALL",
+      sort: "NEWEST",
+    });
+  });
+
+  it("rejects an unsupported status filter", async () => {
+    mocks.getWorkspaceSession.mockResolvedValue(session);
+
+    const response = await GET(
+      new NextRequest("http://localhost:3000/api/issues?status=CLOSED"),
+    );
+
+    expect(response.status).toBe(400);
+    expect(mocks.listIssues).not.toHaveBeenCalled();
+  });
+
+  it("forwards search and pagination params", async () => {
+    mocks.getWorkspaceSession.mockResolvedValue(session);
+    mocks.listIssues.mockResolvedValue({ issues: [], nextCursor: "AMR-4" });
+
+    const response = await GET(
+      new NextRequest(
+        "http://localhost:3000/api/issues?q=checkout&limit=20&cursor=AMR-9&assigneeId=UNASSIGNED",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.listIssues).toHaveBeenCalledWith("organization-1", {
+      status: "ALL",
+      priority: "ALL",
+      sort: "NEWEST",
+      q: "checkout",
+      limit: 20,
+      cursor: "AMR-9",
+      assigneeId: "UNASSIGNED",
+    });
   });
 
   it("creates issues with the active organization and issue key", async () => {

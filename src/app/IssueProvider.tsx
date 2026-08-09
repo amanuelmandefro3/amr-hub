@@ -20,6 +20,11 @@ import {
   type WorkspaceMember,
 } from "./data/issues";
 
+export type IssueListResponse = {
+  issues: Issue[];
+  nextCursor: string | null;
+};
+
 type IssueContextValue = {
   issues: Issue[];
   labels: WorkspaceLabel[];
@@ -42,7 +47,10 @@ function messageFrom(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
-async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
+export async function apiRequest<T>(
+  url: string,
+  init?: RequestInit,
+): Promise<T> {
   const response = await fetch(url, {
     ...init,
     headers: {
@@ -102,13 +110,13 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     try {
       const [loadedIssues, loadedLabels, loadedViews, loadedCycles, loadedMembers] =
         await Promise.all([
-          apiRequest<Issue[]>("/api/issues"),
+          apiRequest<IssueListResponse>("/api/issues"),
           apiRequest<WorkspaceLabel[]>("/api/labels"),
           apiRequest<SavedView[]>("/api/views"),
           apiRequest<Cycle[]>("/api/cycles"),
           apiRequest<WorkspaceMember[]>("/api/members"),
         ]);
-      setIssues(loadedIssues);
+      setIssues(loadedIssues.issues);
       setLabels(loadedLabels);
       setSavedViews(loadedViews);
       setCycles(loadedCycles);
@@ -124,7 +132,9 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     const controller = new AbortController();
 
     Promise.all([
-      apiRequest<Issue[]>("/api/issues", { signal: controller.signal }),
+      apiRequest<IssueListResponse>("/api/issues", {
+        signal: controller.signal,
+      }),
       apiRequest<WorkspaceLabel[]>("/api/labels", {
         signal: controller.signal,
       }),
@@ -140,7 +150,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     ])
       .then(
         ([loadedIssues, loadedLabels, loadedViews, loadedCycles, loadedMembers]) => {
-          setIssues(loadedIssues);
+          setIssues(loadedIssues.issues);
           setLabels(loadedLabels);
           setSavedViews(loadedViews);
           setCycles(loadedCycles);

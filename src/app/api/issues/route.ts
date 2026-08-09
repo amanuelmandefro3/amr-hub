@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createIssueSchema } from "../../../server/issueSchemas";
+import {
+  createIssueSchema,
+  listIssuesQuerySchema,
+} from "../../../server/issueSchemas";
 import {
   createIssue,
   listIssues,
@@ -21,8 +24,23 @@ export async function GET(request: NextRequest) {
   if (!session) return unauthorizedResponse();
   if (!session.workspace) return organizationRequiredResponse();
 
+  const validation = listIssuesQuerySchema.safeParse(
+    Object.fromEntries(request.nextUrl.searchParams),
+  );
+  if (!validation.success) {
+    return NextResponse.json(
+      {
+        error: "Invalid query parameters",
+        fields: validation.error.flatten().fieldErrors,
+      },
+      { status: 400 },
+    );
+  }
+
   try {
-    return NextResponse.json(await listIssues(session.workspace.id));
+    return NextResponse.json(
+      await listIssues(session.workspace.id, validation.data),
+    );
   } catch (error) {
     console.error("Failed to load issues", error);
     return NextResponse.json(

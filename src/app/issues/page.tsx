@@ -1,12 +1,13 @@
 "use client";
 
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowDownUp,
   Bookmark,
   BookmarkPlus,
   ListFilter,
+  LoaderCircle,
   Plus,
   Search,
   Tag,
@@ -14,10 +15,11 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useIssues } from "../IssueProvider";
+import { apiRequest, useIssues, type IssueListResponse } from "../IssueProvider";
 import {
   PRIORITY_LABELS,
   STATUS_LABELS,
+  type Issue,
   type IssuePriority,
   type IssueStatus,
 } from "../data/issues";
@@ -28,6 +30,8 @@ import { IssueLabelChip } from "../components/IssueLabelChip";
 type StatusFilter = "ALL" | "ACTIVE" | IssueStatus;
 
 const UNASSIGNED_FILTER = "UNASSIGNED";
+const PAGE_SIZE = 30;
+const SEARCH_DEBOUNCE_MS = 300;
 
 const statusFilters: { label: string; value: StatusFilter }[] = [
   { label: "All issues", value: "ALL" },
@@ -66,6 +70,31 @@ function initials(name: string | undefined) {
     .slice(0, 2);
 }
 
+function buildQueryParams(filters: {
+  query: string;
+  statusFilter: StatusFilter;
+  priorityFilter: IssuePriority | "ALL";
+  labelFilter: string;
+  assigneeFilter: string;
+  sortNewestFirst: boolean;
+  cursor?: string;
+}) {
+  const params = new URLSearchParams();
+  if (filters.statusFilter !== "ALL") params.set("status", filters.statusFilter);
+  if (filters.priorityFilter !== "ALL") {
+    params.set("priority", filters.priorityFilter);
+  }
+  if (filters.labelFilter !== "ALL") params.set("labelId", filters.labelFilter);
+  if (filters.assigneeFilter !== "ALL") {
+    params.set("assigneeId", filters.assigneeFilter);
+  }
+  if (filters.query) params.set("q", filters.query);
+  params.set("sort", filters.sortNewestFirst ? "NEWEST" : "OLDEST");
+  params.set("limit", String(PAGE_SIZE));
+  if (filters.cursor) params.set("cursor", filters.cursor);
+  return params;
+}
+
 export default function IssuesPage() {
   const {
     issues,
@@ -78,6 +107,7 @@ export default function IssuesPage() {
     deleteSavedView,
   } = useIssues();
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<IssuePriority | "ALL">(
     "ALL",
@@ -91,57 +121,109 @@ export default function IssuesPage() {
   const [viewError, setViewError] = useState<string | null>(null);
   const [isSavingView, setIsSavingView] = useState(false);
 
-  const visibleIssues = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  const [pageIssues, setPageIssues] = useState<Issue[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isFetchingList, setIsFetchingList] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
 
-    return issues
-      .filter((issue) => {
-        const matchesQuery =
-          !normalizedQuery ||
-          issue.title.toLowerCase().includes(normalizedQuery) ||
-          issue.id.toLowerCase().includes(normalizedQuery) ||
-          (issue.assignee?.name.toLowerCase().includes(normalizedQuery) ??
-            false) ||
-          issue.labels.some((label) =>
-            label.name.toLowerCase().includes(normalizedQuery),
-          );
-        const matchesStatus =
-          statusFilter === "ALL" ||
-          (statusFilter === "ACTIVE" && issue.status !== "DONE") ||
-          issue.status === statusFilter;
-        const matchesPriority =
-          priorityFilter === "ALL" || issue.priority === priorityFilter;
-        const matchesLabel =
-          labelFilter === "ALL" ||
-          issue.labels.some((label) => label.id === labelFilter);
-        const matchesAssignee =
-          assigneeFilter === "ALL" ||
-          (assigneeFilter === UNASSIGNED_FILTER
-            ? issue.assignee === null
-            : issue.assignee?.id === assigneeFilter);
+  useEffect(() => {
+    const timeout = setTimeout(
+      () => setDebouncedQuery(query.trim()),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [query]);
 
-        return (
-          matchesQuery &&
-          matchesStatus &&
-          matchesPriority &&
-          matchesLabel &&
-          matchesAssignee
-        );
-      })
-      .sort((left, right) => {
-        const difference =
-          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
-        return sortNewestFirst ? difference : -difference;
+  useEffect(() => {
+    if (isLoading) return;
+
+    const controller = new AbortController();
+
+    const loadPage = async () => {
+      setIsFetchingList(true);
+      setListError(null);
+
+      const params = buildQueryParams({
+        query: debouncedQuery,
+        statusFilter,
+        priorityFilter,
+        labelFilter,
+        assigneeFilter,
+        sortNewestFirst,
       });
+
+      try {
+        const response = await apiRequest<IssueListResponse>(
+          `/api/issues?${params}`,
+          { signal: controller.signal },
+        );
+        setPageIssues(response.issues);
+        setNextCursor(response.nextCursor);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setListError(
+            error instanceof Error ? error.message : "Issues could not be loaded",
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsFetchingList(false);
+      }
+    };
+
+    void loadPage();
+
+    return () => controller.abort();
   }, [
-    issues,
-    assigneeFilter,
-    labelFilter,
-    priorityFilter,
-    query,
-    sortNewestFirst,
+    isLoading,
+    debouncedQuery,
     statusFilter,
+    priorityFilter,
+    labelFilter,
+    assigneeFilter,
+    sortNewestFirst,
   ]);
+
+  const loadMore = async () => {
+    if (!nextCursor) return;
+    setIsLoadingMore(true);
+    setListError(null);
+
+    const params = buildQueryParams({
+      query: debouncedQuery,
+      statusFilter,
+      priorityFilter,
+      labelFilter,
+      assigneeFilter,
+      sortNewestFirst,
+      cursor: nextCursor,
+    });
+
+    try {
+      const response = await apiRequest<IssueListResponse>(
+        `/api/issues?${params}`,
+      );
+      setPageIssues((current) => [...current, ...response.issues]);
+      setNextCursor(response.nextCursor);
+    } catch (error) {
+      setListError(
+        error instanceof Error ? error.message : "More issues could not be loaded",
+      );
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const handleUpdateStatus = async (issueId: string, status: IssueStatus) => {
+    const updated = await updateStatus(issueId, status);
+    if (updated) {
+      setPageIssues((current) =>
+        current.map((issue) =>
+          issue.id === issueId ? { ...issue, status } : issue,
+        ),
+      );
+    }
+  };
 
   const markViewModified = () => setSelectedViewId("");
   const selectedView = savedViews.find(
@@ -154,6 +236,7 @@ export default function IssuesPage() {
     if (!view) return;
 
     setQuery(view.query);
+    setDebouncedQuery(view.query.trim());
     setStatusFilter(view.status);
     setPriorityFilter(view.priority);
     setAssigneeFilter(view.assignee);
@@ -196,6 +279,16 @@ export default function IssuesPage() {
   const handleDeleteView = async () => {
     if (!selectedViewId) return;
     if (await deleteSavedView(selectedViewId)) setSelectedViewId("");
+  };
+
+  const clearFilters = () => {
+    setQuery("");
+    setDebouncedQuery("");
+    setStatusFilter("ALL");
+    setPriorityFilter("ALL");
+    setLabelFilter("ALL");
+    setAssigneeFilter("ALL");
+    setSelectedViewId("");
   };
 
   if (isLoading) {
@@ -355,7 +448,10 @@ export default function IssuesPage() {
 
       <section className="issues-table-panel" aria-label="Issues list">
         <div className="table-summary">
-          <span>{visibleIssues.length} issues</span>
+          <span>
+            {pageIssues.length}
+            {nextCursor ? "+" : ""} issues
+          </span>
           <button
             type="button"
             onClick={() => {
@@ -382,7 +478,7 @@ export default function IssuesPage() {
         </div>
 
         <div className="issues-table-body">
-          {visibleIssues.map((issue) => (
+          {pageIssues.map((issue) => (
             <article className="issue-table-row" key={issue.id}>
               <div className="issue-main-cell">
                 <KindIcon kind={issue.kind} />
@@ -403,7 +499,10 @@ export default function IssuesPage() {
                 <select
                   value={issue.status}
                   onChange={(event) =>
-                    updateStatus(issue.id, event.target.value as IssueStatus)
+                    void handleUpdateStatus(
+                      issue.id,
+                      event.target.value as IssueStatus,
+                    )
                   }
                 >
                   {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -431,24 +530,39 @@ export default function IssuesPage() {
           ))}
         </div>
 
-        {visibleIssues.length === 0 && (
+        {!isFetchingList && pageIssues.length === 0 && (
           <div className="empty-state">
             <Search size={24} aria-hidden="true" />
             <h2>No matching issues</h2>
             <p>Try changing the search term or active filters.</p>
+            <button className="secondary-button" type="button" onClick={clearFilters}>
+              Clear filters
+            </button>
+          </div>
+        )}
+
+        {listError && (
+          <p className="form-submit-error" role="alert">
+            {listError}
+          </p>
+        )}
+
+        {nextCursor && (
+          <div className="load-more-row">
             <button
               className="secondary-button"
               type="button"
-              onClick={() => {
-                setQuery("");
-                setStatusFilter("ALL");
-                setPriorityFilter("ALL");
-                setLabelFilter("ALL");
-                setAssigneeFilter("ALL");
-                setSelectedViewId("");
-              }}
+              onClick={() => void loadMore()}
+              disabled={isLoadingMore}
             >
-              Clear filters
+              {isLoadingMore ? (
+                <LoaderCircle
+                  className="spinning-icon"
+                  size={15}
+                  aria-hidden="true"
+                />
+              ) : null}
+              {isLoadingMore ? "Loading..." : "Load more issues"}
             </button>
           </div>
         )}

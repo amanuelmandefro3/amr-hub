@@ -2499,6 +2499,18 @@ h2 {
   font-size: 12px;
 }
 
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 4px;
+}
+
+.load-more-row button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* Create issue */
 .create-page {
   width: min(100%, 1150px);

@@ -132,14 +132,82 @@ export async function listLabels(
   });
 }
 
-export async function listIssues(organizationId: string) {
+export type IssueListFilters = {
+  status?: "ALL" | "ACTIVE" | IssueStatus;
+  priority?: "ALL" | IssuePriority;
+  labelId?: string;
+  assigneeId?: string;
+  q?: string;
+  sort?: "NEWEST" | "OLDEST";
+  cursor?: string;
+  limit?: number;
+};
+
+export async function listIssues(
+  organizationId: string,
+  filters: IssueListFilters = {},
+) {
+  const where: Prisma.IssueWhereInput = { organizationId };
+
+  if (filters.status === "ACTIVE") {
+    where.status = { not: "DONE" };
+  } else if (filters.status && filters.status !== "ALL") {
+    where.status = filters.status;
+  }
+
+  if (filters.priority && filters.priority !== "ALL") {
+    where.priority = filters.priority;
+  }
+
+  if (filters.labelId) {
+    where.labels = { some: { labelId: filters.labelId } };
+  }
+
+  if (filters.assigneeId === "UNASSIGNED") {
+    where.assigneeId = null;
+  } else if (filters.assigneeId) {
+    where.assigneeId = filters.assigneeId;
+  }
+
+  if (filters.q) {
+    where.OR = [
+      { title: { contains: filters.q, mode: "insensitive" } },
+      { id: { contains: filters.q, mode: "insensitive" } },
+      {
+        assignee: {
+          user: { name: { contains: filters.q, mode: "insensitive" } },
+        },
+      },
+      {
+        labels: {
+          some: { label: { name: { contains: filters.q, mode: "insensitive" } } },
+        },
+      },
+    ];
+  }
+
+  const limit = filters.limit;
   const issues = await prisma.issue.findMany({
-    where: { organizationId },
+    where,
     include: issueInclude,
-    orderBy: { sequence: "desc" },
+    orderBy: { sequence: filters.sort === "OLDEST" ? "asc" : "desc" },
+    ...(limit ? { take: limit + 1 } : {}),
+    ...(filters.cursor
+      ? { cursor: { id: filters.cursor }, skip: 1 }
+      : {}),
   });
 
-  return issues.map(serializeIssue);
+  let nextCursor: string | null = null;
+  let page = issues;
+  if (limit && issues.length > limit) {
+    page = issues.slice(0, limit);
+    nextCursor = page[page.length - 1].id;
+  }
+
+  return {
+    issues: page.map(serializeIssue),
+    nextCursor,
+  };
 }
 
 export async function createIssue(
