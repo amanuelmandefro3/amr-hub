@@ -36,9 +36,57 @@
   --red-500: #d8514d;
   --red-600: #b83c38;
   --red-700: #8f2f2c;
+  --ink: #15191f;
+  --ink-secondary: #343b46;
+  --surface: #fff;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --sidebar-width: 244px;
   --radius: 7px;
+  color-scheme: light dark;
+}
+
+/*
+  Dark mode redefines the neutral scale (--gray-25 through --gray-600),
+  --ink, --ink-secondary, and --surface only. --gray-700/800/900 stay fixed
+  in every theme because they also serve as solid dark decorative fills
+  (primary buttons, the cycle spotlight card, the signup preview panel) that
+  are not meant to invert; text that used to read those shades for color now
+  reads --ink/--ink-secondary instead.
+*/
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --gray-25: #0d0f13;
+    --gray-50: #12151b;
+    --gray-100: #1a1e26;
+    --gray-200: #262b34;
+    --gray-300: #38404c;
+    --gray-400: #7b8494;
+    --gray-500: #9aa3b0;
+    --gray-600: #c3cad4;
+    --ink: #e7eaef;
+    --ink-secondary: #c3cad4;
+    --surface: #171b22;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --gray-25: #0d0f13;
+  --gray-50: #12151b;
+  --gray-100: #1a1e26;
+  --gray-200: #262b34;
+  --gray-300: #38404c;
+  --gray-400: #7b8494;
+  --gray-500: #9aa3b0;
+  --gray-600: #c3cad4;
+  --ink: #e7eaef;
+  --ink-secondary: #c3cad4;
+  --surface: #171b22;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 * {
@@ -52,7 +100,7 @@ html {
 body {
   min-width: 320px;
   margin: 0;
-  color: var(--gray-900);
+  color: var(--ink);
   background: var(--gray-50);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -95,13 +143,30 @@ a {
 
 /* Public product page */
 .landing-content {
+  /*
+    The marketing page keeps its own fixed light identity regardless of the
+    reader's theme, so every token the app-shell flips for dark mode is
+    pinned back to its light value here.
+  */
+  --gray-25: #fcfcfd;
+  --gray-50: #f8f9fb;
+  --gray-100: #f0f2f5;
+  --gray-200: #e2e5e9;
+  --gray-300: #c9ced6;
+  --gray-400: #98a0ad;
+  --gray-500: #697281;
+  --gray-600: #4c5563;
+  --ink: #15191f;
+  --ink-secondary: #343b46;
+  --surface: #fff;
+  color-scheme: light;
   min-height: 100vh;
-  background: #fff;
+  background: var(--surface);
 }
 
 .landing-page {
-  color: var(--gray-900);
-  background: #fff;
+  color: var(--ink);
+  background: var(--surface);
 }
 
 .landing-header {
@@ -163,7 +228,7 @@ a {
 }
 
 .landing-signin {
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-size: 12px;
   font-weight: 620;
 }
@@ -187,8 +252,8 @@ a {
 }
 
 .landing-header-cta:hover {
-  color: var(--gray-900);
-  background: #fff;
+  color: var(--ink);
+  background: var(--surface);
   transform: translateY(-1px);
 }
 
@@ -279,7 +344,7 @@ a {
 
 .landing-primary-cta {
   border: 1px solid #75c79a;
-  color: var(--gray-900);
+  color: var(--ink);
   background: #8ed3ae;
 }
 
@@ -327,7 +392,7 @@ a {
   overflow: hidden;
   border: 1px solid var(--gray-600);
   border-radius: 8px;
-  color: var(--gray-800);
+  color: var(--ink);
   background: var(--gray-50);
   box-shadow: 0 32px 70px rgba(0, 0, 0, 0.28);
 }
@@ -340,7 +405,7 @@ a {
   gap: 9px;
   padding: 0 13px;
   border-bottom: 1px solid var(--gray-200);
-  background: #fff;
+  background: var(--surface);
   font-size: 10px;
 }
 
@@ -394,7 +459,7 @@ a {
   flex-direction: column;
   gap: 4px;
   border-right: 1px solid var(--gray-200);
-  background: #fff;
+  background: var(--surface);
 }
 
 .landing-scene-sidebar span {
@@ -409,7 +474,7 @@ a {
 }
 
 .landing-scene-sidebar span.active {
-  color: var(--gray-900);
+  color: var(--ink);
   background: var(--gray-100);
   font-weight: 680;
 }
@@ -469,7 +534,7 @@ a {
 
 .landing-scene-tabs span.active {
   border-bottom: 2px solid var(--green-600);
-  color: var(--gray-800);
+  color: var(--ink);
   font-weight: 680;
 }
 
@@ -675,7 +740,7 @@ a {
 .landing-feature-copy h2,
 .landing-final-cta h2 {
   margin: 0 0 18px;
-  color: var(--gray-900);
+  color: var(--ink);
   font-size: 35px;
   font-weight: 720;
   line-height: 1.18;
@@ -701,7 +766,7 @@ a {
   display: flex;
   align-items: center;
   gap: 9px;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-size: 11px;
 }
 
@@ -715,7 +780,7 @@ a {
   overflow: hidden;
   border: 1px solid var(--gray-200);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 22px 55px rgba(24, 29, 35, 0.09);
 }
 
@@ -738,7 +803,7 @@ a {
   border: 1px solid var(--gray-200);
   border-radius: 5px;
   color: var(--gray-600);
-  background: #fff;
+  background: var(--surface);
   font-size: 9px;
 }
 
@@ -806,7 +871,7 @@ a {
 .landing-demo-issue strong {
   grid-column: 1 / -1;
   overflow: hidden;
-  color: var(--gray-800);
+  color: var(--ink);
   font-size: 11px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -978,7 +1043,7 @@ a {
   display: flex;
   align-items: center;
   gap: 9px;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-size: 11px;
   font-weight: 620;
 }
@@ -1029,7 +1094,7 @@ a {
 }
 
 .landing-security-list strong {
-  color: var(--gray-800);
+  color: var(--ink);
   font-size: 11px;
 }
 
@@ -1095,7 +1160,7 @@ a {
 
 .landing-footer {
   border-top: 1px solid var(--gray-200);
-  background: #fff;
+  background: var(--surface);
 }
 
 .landing-footer .landing-section-inner {
@@ -1139,7 +1204,7 @@ a {
   flex-direction: column;
   padding: 20px 14px 14px;
   border-right: 1px solid var(--gray-200);
-  background: #fff;
+  background: var(--surface);
 }
 
 .brand {
@@ -1251,12 +1316,12 @@ a {
 }
 
 .nav-link:hover {
-  color: var(--gray-900);
+  color: var(--ink);
   background: var(--gray-50);
 }
 
 .nav-link.active {
-  color: var(--gray-900);
+  color: var(--ink);
   background: var(--gray-100);
   font-weight: 650;
 }
@@ -1285,7 +1350,7 @@ a {
   place-items: center;
   border: 1px solid var(--gray-200);
   border-radius: 50%;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   background: var(--gray-100);
   font-size: 10px;
   font-weight: 700;
@@ -1319,6 +1384,29 @@ a {
 .sidebar-signout:hover {
   color: var(--red-600);
   background: var(--red-50);
+}
+
+.theme-toggle {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  color: var(--gray-400);
+  background: transparent;
+}
+
+.theme-toggle:hover {
+  color: var(--ink);
+  background: var(--gray-100);
+}
+
+.theme-toggle-placeholder {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
 .mobile-header {
@@ -1361,7 +1449,7 @@ p {
 
 h1 {
   margin-bottom: 7px;
-  color: var(--gray-900);
+  color: var(--ink);
   font-size: 28px;
   font-weight: 720;
   line-height: 1.15;
@@ -1416,8 +1504,8 @@ h2 {
 
 .secondary-button {
   border: 1px solid var(--gray-200);
-  color: var(--gray-700);
-  background: #fff;
+  color: var(--ink-secondary);
+  background: var(--surface);
 }
 
 .secondary-button:hover {
@@ -1428,7 +1516,7 @@ h2 {
 .danger-button {
   border: 1px solid var(--red-200);
   color: var(--red-600);
-  background: #fff;
+  background: var(--surface);
 }
 
 .danger-button:hover {
@@ -1470,7 +1558,7 @@ h2 {
 .form-section {
   border: 1px solid var(--gray-200);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 1px 2px rgba(24, 29, 35, 0.025);
 }
 
@@ -1695,7 +1783,7 @@ h2 {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--surface);
   content: "";
 }
 
@@ -1775,7 +1863,7 @@ h2 {
 }
 
 .cycle-panel-empty h2 {
-  color: var(--gray-800);
+  color: var(--ink);
 }
 
 .text-link {
@@ -1862,7 +1950,7 @@ h2 {
 
 .activity-event-copy strong {
   overflow: hidden;
-  color: var(--gray-800);
+  color: var(--ink);
   font-size: 11px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -1878,7 +1966,7 @@ h2 {
 }
 
 .activity-event-copy b {
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-weight: 620;
 }
 
@@ -2082,7 +2170,7 @@ h2 {
   border: 1px solid var(--gray-200);
   border-radius: 5px;
   color: var(--gray-500);
-  background: #fff;
+  background: var(--surface);
 }
 
 .saved-views-bar select {
@@ -2092,7 +2180,7 @@ h2 {
   padding-right: 24px;
   border: 0;
   outline: 0;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   background: transparent;
   font-size: 11px;
 }
@@ -2111,11 +2199,11 @@ h2 {
   border: 1px solid var(--gray-200);
   border-radius: 5px;
   color: var(--gray-500);
-  background: #fff;
+  background: var(--surface);
 }
 
 .icon-button:hover {
-  color: var(--gray-800);
+  color: var(--ink);
   border-color: var(--gray-300);
   background: var(--gray-25);
 }
@@ -2155,12 +2243,12 @@ h2 {
 }
 
 .filter-tabs button:hover {
-  color: var(--gray-800);
+  color: var(--ink);
   background: var(--gray-100);
 }
 
 .filter-tabs button.active {
-  color: var(--gray-900);
+  color: var(--ink);
   background: var(--gray-100);
   font-weight: 650;
 }
@@ -2172,7 +2260,7 @@ h2 {
   place-items: center;
   border-radius: 4px;
   color: var(--gray-500);
-  background: #fff;
+  background: var(--surface);
   font-size: 9px;
 }
 
@@ -2191,7 +2279,7 @@ h2 {
   border: 1px solid var(--gray-200);
   border-radius: 5px;
   color: var(--gray-500);
-  background: #fff;
+  background: var(--surface);
 }
 
 .search-field {
@@ -2246,7 +2334,7 @@ h2 {
   padding: 18px;
   border: 1px solid var(--gray-200);
   border-radius: 7px;
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 20px 55px rgba(21, 25, 31, 0.2);
 }
 
@@ -2490,7 +2578,7 @@ h2 {
 
 .empty-state h2 {
   margin: 12px 0 4px;
-  color: var(--gray-800);
+  color: var(--ink);
 }
 
 .empty-state p {
@@ -2527,7 +2615,7 @@ h2 {
 }
 
 .back-link:hover {
-  color: var(--gray-900);
+  color: var(--ink);
 }
 
 .create-header {
@@ -2588,7 +2676,7 @@ h2 {
 }
 
 .form-field > span:first-child {
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-size: 11px;
   font-weight: 650;
 }
@@ -2600,8 +2688,8 @@ h2 {
   border: 1px solid var(--gray-200);
   border-radius: 6px;
   outline: 0;
-  color: var(--gray-800);
-  background: #fff;
+  color: var(--ink);
+  background: var(--surface);
   font-size: 13px;
   transition:
     border-color 150ms ease,
@@ -2667,7 +2755,7 @@ h2 {
 
 .label-field legend {
   margin-bottom: 8px;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-size: 11px;
   font-weight: 650;
 }
@@ -2696,7 +2784,7 @@ h2 {
 .property-label-options input:not(:checked) + .issue-label-chip {
   border-color: var(--gray-200);
   color: var(--gray-500);
-  background: #fff;
+  background: var(--surface);
 }
 
 .label-options input:not(:checked) + .issue-label-chip i,
@@ -2734,7 +2822,7 @@ h2 {
 }
 
 .form-aside h2 {
-  color: var(--gray-800);
+  color: var(--ink);
 }
 
 .form-aside ul {
@@ -2769,7 +2857,7 @@ h2 {
 }
 
 .form-aside > p strong {
-  color: var(--gray-700);
+  color: var(--ink-secondary);
 }
 
 /* Issue detail */
@@ -2835,8 +2923,8 @@ h2 {
   border: 1px solid var(--gray-200);
   border-radius: 6px;
   outline: 0;
-  color: var(--gray-800);
-  background: #fff;
+  color: var(--ink);
+  background: var(--surface);
 }
 
 .detail-title-field input {
@@ -2910,7 +2998,7 @@ h2 {
 .issue-description {
   max-width: 72ch;
   margin: 26px 0 0;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-size: 13px;
   line-height: 1.75;
   white-space: pre-wrap;
@@ -2942,7 +3030,7 @@ h2 {
 
 .issue-property > div {
   min-width: 0;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-size: 11px;
 }
 
@@ -2970,7 +3058,7 @@ h2 {
   border: 1px solid transparent;
   border-radius: 5px;
   outline: 0;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   background: transparent;
   font-size: 10px;
 }
@@ -3012,7 +3100,7 @@ h2 {
   border: 1px solid transparent;
   border-radius: 5px;
   outline: 0;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   background: transparent;
   font-size: 11px;
 }
@@ -3149,7 +3237,7 @@ h2 {
 
 .comment p {
   margin: 0;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-size: 12px;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -3179,7 +3267,7 @@ h2 {
   border: 1px solid var(--gray-200);
   border-radius: 6px;
   outline: 0;
-  background: #fff;
+  background: var(--surface);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -3238,7 +3326,7 @@ h2 {
   border: 1px solid var(--gray-200);
   border-radius: 50%;
   color: var(--gray-500);
-  background: #fff;
+  background: var(--surface);
 }
 
 .activity-status_changed {
@@ -3288,7 +3376,7 @@ h2 {
 }
 
 .activity-item p strong {
-  color: var(--gray-800);
+  color: var(--ink);
   font-weight: 640;
 }
 
@@ -3501,7 +3589,7 @@ h2 {
   padding: 16px;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--surface);
 }
 
 .cycle-card header,
@@ -3555,7 +3643,7 @@ h2 {
 
 .cycle-empty h2 {
   margin: 10px 0 4px;
-  color: var(--gray-800);
+  color: var(--ink);
 }
 
 .cycle-empty p {
@@ -3593,7 +3681,7 @@ h2 {
   border: 1px solid var(--red-200);
   border-radius: 6px;
   color: var(--red-700);
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 12px 35px rgba(31, 41, 55, 0.16);
 }
 
@@ -3605,7 +3693,7 @@ h2 {
 }
 
 .sync-error strong {
-  color: var(--gray-900);
+  color: var(--ink);
   font-size: 12px;
 }
 
@@ -3632,7 +3720,7 @@ h2 {
   display: grid;
   min-height: 100svh;
   grid-template-columns: minmax(420px, 0.86fr) minmax(480px, 1.14fr);
-  background: #fff;
+  background: var(--surface);
 }
 
 .auth-form-pane {
@@ -3719,7 +3807,7 @@ h2 {
 }
 
 .password-input button:hover {
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   background: var(--gray-50);
 }
 
@@ -3788,7 +3876,7 @@ h2 {
   overflow: hidden;
   border: 1px solid var(--gray-200);
   border-radius: 5px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .workspace-slug-input:focus-within {
@@ -3860,8 +3948,8 @@ h2 {
 }
 
 .auth-method-tabs button.active {
-  color: var(--gray-900);
-  background: #fff;
+  color: var(--ink);
+  background: var(--surface);
   box-shadow: 0 1px 3px rgba(24, 29, 35, 0.1);
 }
 
@@ -3934,8 +4022,8 @@ h2 {
 }
 
 .preview-topbar .brand-mark {
-  color: var(--gray-900);
-  background: #fff;
+  color: var(--ink);
+  background: var(--surface);
 }
 
 .preview-status {
@@ -4044,7 +4132,7 @@ h2 {
 
 .signup-preview-steps .active b {
   border-color: var(--green-400);
-  color: var(--gray-900);
+  color: var(--ink);
   background: var(--green-300);
 }
 
@@ -4071,8 +4159,8 @@ h2 {
   height: 54px;
   place-items: center;
   border-radius: 7px;
-  color: var(--gray-900);
-  background: #fff;
+  color: var(--ink);
+  background: var(--surface);
   font-size: 16px;
   font-weight: 760;
 }
@@ -4147,7 +4235,7 @@ h2 {
   padding: 24px;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--surface);
 }
 
 .password-strength {
@@ -4189,7 +4277,7 @@ h2 {
 .account-section {
   border: 1px solid var(--gray-200);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--surface);
 }
 
 .account-profile {
@@ -4310,7 +4398,7 @@ h2 {
   place-items: center;
   border: 1px solid var(--gray-200);
   border-radius: 7px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .totp-qr img {
@@ -4327,7 +4415,7 @@ h2 {
 
 .enrollment-instructions > strong,
 .backup-codes strong {
-  color: var(--gray-900);
+  color: var(--ink);
   font-size: 13px;
 }
 
@@ -4396,7 +4484,7 @@ h2 {
   padding: 7px 9px;
   border: 1px solid rgba(146, 91, 18, 0.15);
   border-radius: 4px;
-  color: var(--gray-800);
+  color: var(--ink);
   background: rgba(255, 255, 255, 0.72);
   font-size: 11px;
   text-align: center;
@@ -4525,7 +4613,7 @@ h2 {
   min-width: 0;
   align-items: center;
   gap: 7px;
-  color: var(--gray-800);
+  color: var(--ink);
   font-size: 11px;
   font-weight: 670;
 }
@@ -4605,7 +4693,7 @@ h2 {
 }
 
 .invite-heading strong {
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   font-weight: 650;
 }
 
@@ -4685,7 +4773,7 @@ h2 {
   border: 1px solid var(--green-200);
   border-radius: 5px;
   outline: 0;
-  color: var(--gray-700);
+  color: var(--ink-secondary);
   background: var(--green-50);
   font-family: inherit;
   font-size: 10px;
@@ -4766,7 +4854,7 @@ h2 {
 }
 
 .team-access-identity strong {
-  color: var(--gray-800);
+  color: var(--ink);
   font-size: 11px;
   font-weight: 650;
 }
@@ -5059,8 +5147,7 @@ h2 {
     justify-content: space-between;
     padding: 0 18px;
     border-bottom: 1px solid var(--gray-200);
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(10px);
+    background: var(--surface);
   }
 
   .mobile-header .brand-mark {

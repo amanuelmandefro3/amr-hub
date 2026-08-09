@@ -12,6 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { authClient } from "../lib/auth-client";
+import { ThemeToggle } from "./components/ThemeToggle";
 
 const links = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -104,6 +105,7 @@ export default function NavBar() {
                 : "Workspace member"}
             </small>
           </Link>
+          <ThemeToggle />
           <button
             className="sidebar-signout"
             type="button"
@@ -132,6 +134,7 @@ export default function NavBar() {
               <Icon size={19} aria-hidden="true" />
             </Link>
           ))}
+          <ThemeToggle />
           <Link
             href="/issues/new"
             className="mobile-create-button"
