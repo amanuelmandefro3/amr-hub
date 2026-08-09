@@ -3,6 +3,7 @@ import { createIssueSchema } from "../../../server/issueSchemas";
 import {
   createIssue,
   listIssues,
+  UnknownAssigneeError,
   UnknownCycleError,
   UnknownLabelError,
 } from "../../../server/issues";
@@ -63,7 +64,8 @@ export async function POST(request: NextRequest) {
 
     if (
       error instanceof UnknownLabelError ||
-      error instanceof UnknownCycleError
+      error instanceof UnknownCycleError ||
+      error instanceof UnknownAssigneeError
     ) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

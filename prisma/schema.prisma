@@ -16,13 +16,14 @@ model Issue {
   status         String       @default("OPEN")
   priority       String       @default("MEDIUM")
   kind           String       @default("TASK")
-  assignee       String       @default("Unassigned")
+  assigneeId     String?
   dueDate        DateTime?
   estimate       Int?
   cycleId        String?
   organizationId String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  assignee       Member?      @relation("IssueAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   cycle          Cycle?       @relation(fields: [cycleId], references: [id], onDelete: SetNull)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   comments       Comment[]
@@ -34,6 +35,7 @@ model Issue {
   @@index([status])
   @@index([cycleId])
   @@index([organizationId, status])
+  @@index([assigneeId])
 }
 
 model Label {
@@ -182,6 +184,7 @@ model Member {
   createdAt      DateTime
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedIssues Issue[]      @relation("IssueAssignee")
 
   @@unique([organizationId, userId])
   @@index([userId])

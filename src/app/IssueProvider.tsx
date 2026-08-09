@@ -17,6 +17,7 @@ import {
   type SavedView,
   type SavedViewInput,
   type WorkspaceLabel,
+  type WorkspaceMember,
 } from "./data/issues";
 
 type IssueContextValue = {
@@ -24,6 +25,7 @@ type IssueContextValue = {
   labels: WorkspaceLabel[];
   savedViews: SavedView[];
   cycles: Cycle[];
+  members: WorkspaceMember[];
   isLoading: boolean;
   createIssue: (issue: NewIssueInput) => Promise<Issue>;
   updateStatus: (id: string, status: IssueStatus) => Promise<boolean>;
@@ -89,6 +91,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
   const [labels, setLabels] = useState<WorkspaceLabel[]>([]);
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,17 +100,19 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      const [loadedIssues, loadedLabels, loadedViews, loadedCycles] =
+      const [loadedIssues, loadedLabels, loadedViews, loadedCycles, loadedMembers] =
         await Promise.all([
           apiRequest<Issue[]>("/api/issues"),
           apiRequest<WorkspaceLabel[]>("/api/labels"),
           apiRequest<SavedView[]>("/api/views"),
           apiRequest<Cycle[]>("/api/cycles"),
+          apiRequest<WorkspaceMember[]>("/api/members"),
         ]);
       setIssues(loadedIssues);
       setLabels(loadedLabels);
       setSavedViews(loadedViews);
       setCycles(loadedCycles);
+      setMembers(loadedMembers);
     } catch (requestError) {
       setError(messageFrom(requestError, "Issues could not be loaded"));
     } finally {
@@ -129,14 +134,20 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
       apiRequest<Cycle[]>("/api/cycles", {
         signal: controller.signal,
       }),
+      apiRequest<WorkspaceMember[]>("/api/members", {
+        signal: controller.signal,
+      }),
     ])
-      .then(([loadedIssues, loadedLabels, loadedViews, loadedCycles]) => {
-        setIssues(loadedIssues);
-        setLabels(loadedLabels);
-        setSavedViews(loadedViews);
-        setCycles(loadedCycles);
-        setError(null);
-      })
+      .then(
+        ([loadedIssues, loadedLabels, loadedViews, loadedCycles, loadedMembers]) => {
+          setIssues(loadedIssues);
+          setLabels(loadedLabels);
+          setSavedViews(loadedViews);
+          setCycles(loadedCycles);
+          setMembers(loadedMembers);
+          setError(null);
+        },
+      )
       .catch((requestError) => {
         if (!controller.signal.aborted) {
           setError(messageFrom(requestError, "Issues could not be loaded"));
@@ -266,6 +277,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
       labels,
       savedViews,
       cycles,
+      members,
       isLoading,
       createIssue,
       updateStatus,
@@ -280,6 +292,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
       labels,
       savedViews,
       cycles,
+      members,
       isLoading,
       createIssue,
       updateStatus,

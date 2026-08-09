@@ -24,12 +24,12 @@ type FormErrors = {
 
 export default function NewIssuePage() {
   const router = useRouter();
-  const { createIssue, labels, cycles } = useIssues();
+  const { createIssue, labels, cycles, members } = useIssues();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<IssuePriority>("MEDIUM");
   const [kind, setKind] = useState<IssueKind>("BUG");
-  const [assignee, setAssignee] = useState("Unassigned");
+  const [assigneeId, setAssigneeId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [cycleId, setCycleId] = useState<string | null>(null);
   const [estimate, setEstimate] = useState<IssueEstimate | null>(3);
@@ -66,7 +66,7 @@ export default function NewIssuePage() {
         description: description.trim(),
         priority,
         kind,
-        assignee,
+        assigneeId: assigneeId || null,
         dueDate: dueDate || null,
         cycleId: selectedCycleId || null,
         estimate,
@@ -204,13 +204,15 @@ export default function NewIssuePage() {
               <label className="form-field">
                 <span>Assignee</span>
                 <select
-                  value={assignee}
-                  onChange={(event) => setAssignee(event.target.value)}
+                  value={assigneeId}
+                  onChange={(event) => setAssigneeId(event.target.value)}
                 >
-                  <option>Unassigned</option>
-                  <option>Amanuel R.</option>
-                  <option>Maya Chen</option>
-                  <option>Jon Bell</option>
+                  <option value="">Unassigned</option>
+                  {members.map((member) => (
+                    <option value={member.id} key={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="form-field">

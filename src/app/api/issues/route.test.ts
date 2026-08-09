@@ -89,7 +89,7 @@ describe("/api/issues organization boundary", () => {
       description: "This issue belongs to the active organization.",
       priority: "HIGH",
       kind: "TASK",
-      assignee: "Owner",
+      assigneeId: null,
       dueDate: null,
       estimate: 3,
       cycleId: null,

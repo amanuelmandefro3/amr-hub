@@ -98,11 +98,8 @@ export default function Home() {
   );
   const activeOwners = new Set(
     issues
-      .filter(
-        (issue) =>
-          issue.status !== "DONE" && issue.assignee !== "Unassigned",
-      )
-      .map((issue) => issue.assignee),
+      .filter((issue) => issue.status !== "DONE" && issue.assignee !== null)
+      .map((issue) => issue.assignee?.id),
   ).size;
   const currentCycle = findCurrentCycle(cycles, now);
   const cycleMetrics = currentCycle

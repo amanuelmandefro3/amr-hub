@@ -27,14 +27,14 @@ import { IssueLabelChip } from "../components/IssueLabelChip";
 
 type StatusFilter = "ALL" | "ACTIVE" | IssueStatus;
 
+const UNASSIGNED_FILTER = "UNASSIGNED";
+
 const statusFilters: { label: string; value: StatusFilter }[] = [
   { label: "All issues", value: "ALL" },
   { label: "Active", value: "ACTIVE" },
   { label: "Backlog", value: "BACKLOG" },
   { label: "Completed", value: "DONE" },
 ];
-
-const assignees = ["Amanuel R.", "Maya Chen", "Jon Bell", "Unassigned"];
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -57,8 +57,8 @@ function dueDateState(value: string) {
   return "scheduled";
 }
 
-function initials(name: string) {
-  if (name === "Unassigned") return "?";
+function initials(name: string | undefined) {
+  if (!name) return "?";
   return name
     .split(" ")
     .map((part) => part[0])
@@ -71,6 +71,7 @@ export default function IssuesPage() {
     issues,
     labels,
     savedViews,
+    members,
     isLoading,
     updateStatus,
     createSavedView,
@@ -99,7 +100,8 @@ export default function IssuesPage() {
           !normalizedQuery ||
           issue.title.toLowerCase().includes(normalizedQuery) ||
           issue.id.toLowerCase().includes(normalizedQuery) ||
-          issue.assignee.toLowerCase().includes(normalizedQuery) ||
+          (issue.assignee?.name.toLowerCase().includes(normalizedQuery) ??
+            false) ||
           issue.labels.some((label) =>
             label.name.toLowerCase().includes(normalizedQuery),
           );
@@ -113,7 +115,10 @@ export default function IssuesPage() {
           labelFilter === "ALL" ||
           issue.labels.some((label) => label.id === labelFilter);
         const matchesAssignee =
-          assigneeFilter === "ALL" || issue.assignee === assigneeFilter;
+          assigneeFilter === "ALL" ||
+          (assigneeFilter === UNASSIGNED_FILTER
+            ? issue.assignee === null
+            : issue.assignee?.id === assigneeFilter);
 
         return (
           matchesQuery &&
@@ -337,9 +342,10 @@ export default function IssuesPage() {
               }}
             >
               <option value="ALL">All assignees</option>
-              {assignees.map((assignee) => (
-                <option value={assignee} key={assignee}>
-                  {assignee}
+              <option value={UNASSIGNED_FILTER}>Unassigned</option>
+              {members.map((member) => (
+                <option value={member.id} key={member.id}>
+                  {member.name}
                 </option>
               ))}
             </select>
@@ -408,8 +414,8 @@ export default function IssuesPage() {
                 </select>
               </label>
               <div className="assignee-cell">
-                <span className="avatar">{initials(issue.assignee)}</span>
-                <span>{issue.assignee}</span>
+                <span className="avatar">{initials(issue.assignee?.name)}</span>
+                <span>{issue.assignee?.name ?? "Unassigned"}</span>
               </div>
               {issue.dueDate ? (
                 <time

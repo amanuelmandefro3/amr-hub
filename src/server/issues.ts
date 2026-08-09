@@ -13,6 +13,7 @@ import {
   type IssueUpdates,
   type NewIssueInput,
   type WorkspaceLabel,
+  type WorkspaceMember,
 } from "../app/data/issues";
 
 export type WorkspaceActor = {
@@ -33,12 +34,31 @@ const issueInclude = {
     include: { label: true },
     orderBy: { label: { name: "asc" } },
   },
+  assignee: {
+    include: {
+      user: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+  },
   cycle: true,
 } satisfies Prisma.IssueInclude;
 
 type StoredIssue = Prisma.IssueGetPayload<{
   include: typeof issueInclude;
 }>;
+
+function serializeAssignee(
+  assignee: StoredIssue["assignee"],
+): WorkspaceMember | null {
+  if (!assignee) return null;
+
+  return {
+    id: assignee.id,
+    name: assignee.user.name,
+    email: assignee.user.email,
+  };
+}
 
 function serializeIssue(issue: StoredIssue): Issue {
   return {
@@ -48,7 +68,7 @@ function serializeIssue(issue: StoredIssue): Issue {
     status: issue.status as IssueStatus,
     priority: issue.priority as IssuePriority,
     kind: issue.kind as IssueKind,
-    assignee: issue.assignee,
+    assignee: serializeAssignee(issue.assignee),
     dueDate: issue.dueDate?.toISOString() ?? null,
     estimate: issue.estimate as Issue["estimate"],
     cycleId: issue.cycleId,
@@ -129,6 +149,7 @@ export async function createIssue(
   await ensureWorkspaceLabels(actor.organizationId);
   await validateLabelIds(input.labelIds, actor.organizationId);
   await validateCycleId(input.cycleId, actor.organizationId);
+  await validateAssigneeId(input.assigneeId, actor.organizationId);
 
   const issue = await prisma.$transaction(async (transaction) => {
     const latestIssue = await transaction.issue.findFirst({
@@ -236,10 +257,39 @@ export class UnknownCycleError extends Error {
   }
 }
 
+async function validateAssigneeId(
+  assigneeId: string | null | undefined,
+  organizationId: string,
+) {
+  if (!assigneeId) return null;
+
+  const member = await prisma.member.findFirst({
+    where: {
+      id: assigneeId,
+      organizationId,
+    },
+    include: { user: { select: { name: true } } },
+  });
+
+  if (!member) {
+    throw new UnknownAssigneeError();
+  }
+
+  return member.user.name;
+}
+
+export class UnknownAssigneeError extends Error {
+  constructor() {
+    super("The selected assignee is not a member of this workspace");
+    this.name = "UnknownAssigneeError";
+  }
+}
+
 function buildActivity(
   current: StoredIssue,
   updates: IssueUpdates,
   nextCycleName: string | null,
+  nextAssigneeName: string | null,
   actor: WorkspaceActor,
 ): Prisma.ActivityCreateWithoutIssueInput[] {
   const events: Prisma.ActivityCreateWithoutIssueInput[] = [];
@@ -266,13 +316,15 @@ function buildActivity(
     });
   }
 
-  if (updates.assignee && updates.assignee !== current.assignee) {
+  if (
+    updates.assigneeId !== undefined &&
+    updates.assigneeId !== current.assigneeId
+  ) {
     events.push({
       type: "ASSIGNEE_CHANGED",
-      description:
-        updates.assignee === "Unassigned"
-          ? "removed the assignee"
-          : `assigned the issue to ${updates.assignee}`,
+      description: nextAssigneeName
+        ? `assigned the issue to ${nextAssigneeName}`
+        : "removed the assignee",
       actor: actor.name,
       user: { connect: { id: actor.id } },
     });
@@ -380,6 +432,10 @@ export async function updateIssue(
     updates.cycleId,
     actor.organizationId,
   );
+  const nextAssigneeName = await validateAssigneeId(
+    updates.assigneeId,
+    actor.organizationId,
+  );
 
   const issue = await prisma.$transaction(async (transaction) => {
     const current = await transaction.issue.findFirst({
@@ -392,7 +448,13 @@ export async function updateIssue(
 
     if (!current) return null;
 
-    const activity = buildActivity(current, updates, nextCycleName, actor);
+    const activity = buildActivity(
+      current,
+      updates,
+      nextCycleName,
+      nextAssigneeName,
+      actor,
+    );
     const changed = activity.length > 0;
     if (!changed) return current;
     const { dueDate, labelIds, ...fields } = updates;

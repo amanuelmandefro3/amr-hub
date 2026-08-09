@@ -25,6 +25,7 @@ export const issueEstimateSchema = z.union([
 ]);
 
 const cycleIdSchema = z.string().trim().min(1).max(80).nullable();
+const assigneeIdSchema = z.string().trim().min(1).max(80).nullable();
 
 const dueDateSchema = z
   .string()
@@ -53,7 +54,7 @@ export const createIssueSchema = z
     description: z.string().trim().min(12).max(2000),
     priority: issuePrioritySchema,
     kind: issueKindSchema,
-    assignee: z.string().trim().min(1).max(80),
+    assigneeId: assigneeIdSchema,
     dueDate: dueDateSchema.nullable(),
     estimate: issueEstimateSchema.nullable(),
     cycleId: cycleIdSchema,
@@ -68,7 +69,7 @@ export const updateIssueSchema = z
     status: issueStatusSchema.optional(),
     priority: issuePrioritySchema.optional(),
     kind: issueKindSchema.optional(),
-    assignee: z.string().trim().min(1).max(80).optional(),
+    assigneeId: assigneeIdSchema.optional(),
     dueDate: dueDateSchema.nullable().optional(),
     estimate: issueEstimateSchema.nullable().optional(),
     cycleId: cycleIdSchema.optional(),

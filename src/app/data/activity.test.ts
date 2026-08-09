@@ -12,7 +12,7 @@ function issue(overrides: Partial<Issue> & Pick<Issue, "id" | "createdAt">): Iss
     status: "OPEN",
     priority: "MEDIUM",
     kind: "TASK",
-    assignee: "Unassigned",
+    assignee: null,
     dueDate: null,
     estimate: null,
     cycleId: null,

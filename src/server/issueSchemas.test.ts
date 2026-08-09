@@ -6,7 +6,7 @@ const validIssue = {
   description: "The request remains pending after a valid code is applied.",
   priority: "HIGH",
   kind: "BUG",
-  assignee: "Amanuel R.",
+  assigneeId: null,
   dueDate: "2026-07-29",
   estimate: 5,
   cycleId: "cycle-30",
@@ -33,6 +33,7 @@ describe("createIssueSchema", () => {
     ["invalid calendar date", { dueDate: "2026-02-30" }],
     ["unsupported estimate", { estimate: 4 }],
     ["empty cycle ID", { cycleId: "" }],
+    ["empty assignee ID", { assigneeId: "" }],
     ["short description", { description: "Too short" }],
   ])("rejects %s", (_, change) => {
     const result = createIssueSchema.safeParse({

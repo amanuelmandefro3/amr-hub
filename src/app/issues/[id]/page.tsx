@@ -33,6 +33,7 @@ import {
   type IssueStatus,
   type IssueUpdates,
   type WorkspaceLabel,
+  type WorkspaceMember,
 } from "../../data/issues";
 import { formatCycleDateRange } from "../../data/cycles";
 import {
@@ -133,7 +134,7 @@ function IssueNotFound({ id }: { id: string }) {
 
 export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
-  const { issues, labels, cycles, isLoading, addComment, updateIssue } =
+  const { issues, labels, cycles, members, isLoading, addComment, updateIssue } =
     useIssues();
   const id = decodeURIComponent(params.id);
   const issue = issues.find((candidate) => candidate.id === id);
@@ -151,6 +152,7 @@ export default function IssueDetailPage() {
       issue={issue}
       labels={labels}
       cycles={cycles}
+      members={members}
       onAddComment={addComment}
       onUpdateIssue={updateIssue}
     />
@@ -161,12 +163,14 @@ function IssueDetail({
   issue,
   labels,
   cycles,
+  members,
   onAddComment,
   onUpdateIssue,
 }: {
   issue: Issue;
   labels: WorkspaceLabel[];
   cycles: Cycle[];
+  members: WorkspaceMember[];
   onAddComment: (issueId: string, body: string) => Promise<boolean>;
   onUpdateIssue: (
     issueId: string,
@@ -293,7 +297,7 @@ function IssueDetail({
           <PriorityBadge priority={issue.priority} />
           <span>
             <UserRound size={14} aria-hidden="true" />
-            {issue.assignee}
+            {issue.assignee?.name ?? "Unassigned"}
           </span>
         </div>
       </header>
@@ -474,21 +478,23 @@ function IssueDetail({
             <IssueProperty label="Assignee">
               <label className="editable-property property-person">
                 <span className="avatar">
-                  {issue.assignee === "Unassigned"
-                    ? "?"
-                    : getInitials(issue.assignee)}
+                  {issue.assignee ? getInitials(issue.assignee.name) : "?"}
                 </span>
                 <span className="sr-only">Issue assignee</span>
                 <select
-                  value={issue.assignee}
+                  value={issue.assignee?.id ?? ""}
                   onChange={(event) =>
-                    onUpdateIssue(issue.id, { assignee: event.target.value })
+                    onUpdateIssue(issue.id, {
+                      assigneeId: event.target.value || null,
+                    })
                   }
                 >
-                  <option>Unassigned</option>
-                  <option>Amanuel R.</option>
-                  <option>Maya Chen</option>
-                  <option>Jon Bell</option>
+                  <option value="">Unassigned</option>
+                  {members.map((member) => (
+                    <option value={member.id} key={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
                 </select>
               </label>
             </IssueProperty>

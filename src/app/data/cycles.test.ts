@@ -31,7 +31,7 @@ function issue(overrides: Partial<Issue>): Issue {
     status: "OPEN",
     priority: "MEDIUM",
     kind: "TASK",
-    assignee: "Amanuel R.",
+    assignee: null,
     dueDate: null,
     estimate: 3,
     cycleId: currentCycle.id,

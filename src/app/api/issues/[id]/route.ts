@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateIssueSchema } from "../../../../server/issueSchemas";
 import {
+  UnknownAssigneeError,
   UnknownCycleError,
   UnknownLabelError,
   updateIssue,
@@ -56,7 +57,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     if (
       error instanceof UnknownLabelError ||
-      error instanceof UnknownCycleError
+      error instanceof UnknownCycleError ||
+      error instanceof UnknownAssigneeError
     ) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
