@@ -1,12 +1,14 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, CircleAlert, Sparkles } from "lucide-react";
 import { useIssues } from "../../IssueProvider";
+import { useProjects } from "../../ProjectProvider";
 import { authClient } from "../../../lib/auth-client";
 import { IssueLabelChip } from "../../components/IssueLabelChip";
+import { WorkspaceLoading } from "../../components/WorkspaceLoading";
 import {
   KIND_LABELS,
   PRIORITY_LABELS,
@@ -21,11 +23,22 @@ const ESTIMATES: IssueEstimate[] = [1, 2, 3, 5, 8];
 type FormErrors = {
   title?: string;
   description?: string;
+  projectId?: string;
 };
 
 export default function NewIssuePage() {
+  return (
+    <Suspense fallback={<WorkspaceLoading label="new issue" />}>
+      <NewIssueForm />
+    </Suspense>
+  );
+}
+
+function NewIssueForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { createIssue, labels, cycles, members } = useIssues();
+  const { projects, activeProjectId } = useProjects();
   const { data: activeMember } = authClient.useActiveMember();
 
   useEffect(() => {
@@ -38,6 +51,9 @@ export default function NewIssuePage() {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<IssuePriority>("MEDIUM");
   const [kind, setKind] = useState<IssueKind>("BUG");
+  const [projectId, setProjectId] = useState<string | null>(
+    () => searchParams.get("project"),
+  );
   const [assigneeId, setAssigneeId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [cycleId, setCycleId] = useState<string | null>(null);
@@ -47,7 +63,13 @@ export default function NewIssuePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const selectedCycleId = cycleId ?? findPlanningCycle(cycles)?.id ?? "";
+  const selectedProjectId =
+    projectId ?? activeProjectId ?? projects[0]?.id ?? "";
+  const projectCycles = cycles.filter(
+    (cycle) => cycle.projectId === selectedProjectId,
+  );
+  const selectedCycleId =
+    cycleId ?? findPlanningCycle(projectCycles)?.id ?? "";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -60,6 +82,9 @@ export default function NewIssuePage() {
     if (description.trim().length < 12) {
       nextErrors.description =
         "Add enough detail for someone else to understand the issue.";
+    }
+    if (!selectedProjectId) {
+      nextErrors.projectId = "Choose which project this belongs to.";
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -75,6 +100,7 @@ export default function NewIssuePage() {
         description: description.trim(),
         priority,
         kind,
+        projectId: selectedProjectId,
         assigneeId: assigneeId || null,
         dueDate: dueDate || null,
         cycleId: selectedCycleId || null,
@@ -183,6 +209,34 @@ export default function NewIssuePage() {
 
             <div className="form-grid">
               <label className="form-field">
+                <span>Project</span>
+                <select
+                  value={selectedProjectId}
+                  onChange={(event) => {
+                    setProjectId(event.target.value);
+                    setCycleId(null);
+                    setErrors((current) => ({
+                      ...current,
+                      projectId: undefined,
+                    }));
+                  }}
+                  aria-invalid={Boolean(errors.projectId)}
+                >
+                  <option value="">Choose a project</option>
+                  {projects.map((project) => (
+                    <option value={project.id} key={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.projectId && (
+                  <small className="field-error">
+                    <CircleAlert size={14} aria-hidden="true" />
+                    {errors.projectId}
+                  </small>
+                )}
+              </label>
+              <label className="form-field">
                 <span>Type</span>
                 <select
                   value={kind}
@@ -237,9 +291,10 @@ export default function NewIssuePage() {
                 <select
                   value={selectedCycleId}
                   onChange={(event) => setCycleId(event.target.value)}
+                  disabled={!selectedProjectId}
                 >
                   <option value="">No cycle</option>
-                  {cycles.map((cycle) => (
+                  {projectCycles.map((cycle) => (
                     <option value={cycle.id} key={cycle.id}>
                       {cycle.name} - {formatCycleDateRange(cycle)}
                     </option>

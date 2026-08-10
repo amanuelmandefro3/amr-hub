@@ -536,7 +536,9 @@ function IssueDetail({
                   }
                 >
                   <option value="">No cycle</option>
-                  {cycles.map((cycle) => (
+                  {cycles
+                    .filter((cycle) => cycle.projectId === issue.projectId)
+                    .map((cycle) => (
                     <option value={cycle.id} key={cycle.id}>
                       {cycle.name} - {formatCycleDateRange(cycle)}
                     </option>

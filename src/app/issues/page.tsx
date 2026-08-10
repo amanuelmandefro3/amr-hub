@@ -6,9 +6,11 @@ import {
   ArrowDownUp,
   Bookmark,
   BookmarkPlus,
+  Kanban,
   ListFilter,
   LoaderCircle,
   Plus,
+  Rows3,
   Search,
   Tag,
   Trash2,
@@ -16,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { apiRequest, useIssues, type IssueListResponse } from "../IssueProvider";
+import { useProjects } from "../ProjectProvider";
 import { authClient } from "../../lib/auth-client";
 import {
   PRIORITY_LABELS,
@@ -25,8 +28,11 @@ import {
   type IssueStatus,
 } from "../data/issues";
 import { KindIcon, PriorityBadge } from "../components/IssueVisuals";
+import { IssueBoard } from "../components/IssueBoard";
 import { WorkspaceLoading } from "../components/WorkspaceLoading";
 import { IssueLabelChip } from "../components/IssueLabelChip";
+
+type ViewMode = "list" | "board";
 
 type StatusFilter = "ALL" | "ACTIVE" | IssueStatus;
 
@@ -75,15 +81,20 @@ function buildQueryParams(filters: {
   query: string;
   statusFilter: StatusFilter;
   priorityFilter: IssuePriority | "ALL";
+  projectFilter: string;
   labelFilter: string;
   assigneeFilter: string;
   sortNewestFirst: boolean;
   cursor?: string;
+  limit?: number;
 }) {
   const params = new URLSearchParams();
   if (filters.statusFilter !== "ALL") params.set("status", filters.statusFilter);
   if (filters.priorityFilter !== "ALL") {
     params.set("priority", filters.priorityFilter);
+  }
+  if (filters.projectFilter !== "ALL") {
+    params.set("projectId", filters.projectFilter);
   }
   if (filters.labelFilter !== "ALL") params.set("labelId", filters.labelFilter);
   if (filters.assigneeFilter !== "ALL") {
@@ -91,7 +102,7 @@ function buildQueryParams(filters: {
   }
   if (filters.query) params.set("q", filters.query);
   params.set("sort", filters.sortNewestFirst ? "NEWEST" : "OLDEST");
-  params.set("limit", String(PAGE_SIZE));
+  if (filters.limit) params.set("limit", String(filters.limit));
   if (filters.cursor) params.set("cursor", filters.cursor);
   return params;
 }
@@ -108,6 +119,7 @@ export default function IssuesPage() {
     deleteSavedView,
   } = useIssues();
   const { data: activeMember } = authClient.useActiveMember();
+  const { projects } = useProjects();
   const isViewer = activeMember?.role === "viewer";
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -115,6 +127,8 @@ export default function IssuesPage() {
   const [priorityFilter, setPriorityFilter] = useState<IssuePriority | "ALL">(
     "ALL",
   );
+  const [projectFilter, setProjectFilter] = useState("ALL");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
   const [labelFilter, setLabelFilter] = useState("ALL");
   const [assigneeFilter, setAssigneeFilter] = useState("ALL");
@@ -129,6 +143,10 @@ export default function IssuesPage() {
   const [isFetchingList, setIsFetchingList] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
+
+  const [boardIssues, setBoardIssues] = useState<Issue[]>([]);
+  const [isFetchingBoard, setIsFetchingBoard] = useState(true);
+  const [boardError, setBoardError] = useState<string | null>(null);
 
   useEffect(() => {
     const timeout = setTimeout(
@@ -151,9 +169,11 @@ export default function IssuesPage() {
         query: debouncedQuery,
         statusFilter,
         priorityFilter,
+        projectFilter,
         labelFilter,
         assigneeFilter,
         sortNewestFirst,
+        limit: PAGE_SIZE,
       });
 
       try {
@@ -182,6 +202,58 @@ export default function IssuesPage() {
     debouncedQuery,
     statusFilter,
     priorityFilter,
+    projectFilter,
+    labelFilter,
+    assigneeFilter,
+    sortNewestFirst,
+  ]);
+
+  useEffect(() => {
+    if (isLoading || viewMode !== "board") return;
+
+    const controller = new AbortController();
+
+    const loadBoard = async () => {
+      setIsFetchingBoard(true);
+      setBoardError(null);
+
+      const params = buildQueryParams({
+        query: debouncedQuery,
+        statusFilter,
+        priorityFilter,
+        projectFilter,
+        labelFilter,
+        assigneeFilter,
+        sortNewestFirst,
+      });
+
+      try {
+        const response = await apiRequest<IssueListResponse>(
+          `/api/issues?${params}`,
+          { signal: controller.signal },
+        );
+        setBoardIssues(response.issues);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setBoardError(
+            error instanceof Error ? error.message : "Board could not be loaded",
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsFetchingBoard(false);
+      }
+    };
+
+    void loadBoard();
+
+    return () => controller.abort();
+  }, [
+    isLoading,
+    viewMode,
+    debouncedQuery,
+    statusFilter,
+    priorityFilter,
+    projectFilter,
     labelFilter,
     assigneeFilter,
     sortNewestFirst,
@@ -196,9 +268,11 @@ export default function IssuesPage() {
       query: debouncedQuery,
       statusFilter,
       priorityFilter,
+      projectFilter,
       labelFilter,
       assigneeFilter,
       sortNewestFirst,
+      limit: PAGE_SIZE,
       cursor: nextCursor,
     });
 
@@ -225,7 +299,13 @@ export default function IssuesPage() {
           issue.id === issueId ? { ...issue, status } : issue,
         ),
       );
+      setBoardIssues((current) =>
+        current.map((issue) =>
+          issue.id === issueId ? { ...issue, status } : issue,
+        ),
+      );
     }
+    return updated;
   };
 
   const markViewModified = () => setSelectedViewId("");
@@ -393,6 +473,24 @@ export default function IssuesPage() {
           </label>
           <label className="select-button">
             <ListFilter size={16} aria-hidden="true" />
+            <span className="sr-only">Filter by project</span>
+            <select
+              value={projectFilter}
+              onChange={(event) => {
+                setProjectFilter(event.target.value);
+                markViewModified();
+              }}
+            >
+              <option value="ALL">All projects</option>
+              {projects.map((project) => (
+                <option value={project.id} key={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="select-button">
+            <ListFilter size={16} aria-hidden="true" />
             <span className="sr-only">Filter by priority</span>
             <select
               value={priorityFilter}
@@ -448,9 +546,51 @@ export default function IssuesPage() {
               ))}
             </select>
           </label>
+          <div className="view-toggle" role="tablist" aria-label="Issue view">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "list"}
+              className={viewMode === "list" ? "active" : ""}
+              onClick={() => setViewMode("list")}
+              aria-label="List view"
+              title="List view"
+            >
+              <Rows3 size={16} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "board"}
+              className={viewMode === "board" ? "active" : ""}
+              onClick={() => setViewMode("board")}
+              aria-label="Board view"
+              title="Board view"
+            >
+              <Kanban size={16} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
 
+      {viewMode === "board" ? (
+        <section className="issues-board-panel" aria-label="Issues board">
+          {isFetchingBoard ? (
+            <WorkspaceLoading label="board" />
+          ) : (
+            <IssueBoard
+              issues={boardIssues}
+              isViewer={isViewer}
+              onStatusChange={handleUpdateStatus}
+            />
+          )}
+          {boardError && (
+            <p className="form-submit-error" role="alert">
+              {boardError}
+            </p>
+          )}
+        </section>
+      ) : (
       <section className="issues-table-panel" aria-label="Issues list">
         <div className="table-summary">
           <span>
@@ -573,6 +713,7 @@ export default function IssuesPage() {
           </div>
         )}
       </section>
+      )}
 
       {isSaveViewOpen && (
         <div
