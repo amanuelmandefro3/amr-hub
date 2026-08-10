@@ -13,6 +13,7 @@ const currentCycle: Cycle = {
   startDate: "2026-07-21T00:00:00.000Z",
   endDate: "2026-08-03T23:59:59.999Z",
   capacity: 10,
+  projectId: "project-1",
 };
 
 const upcomingCycle: Cycle = {
@@ -21,6 +22,7 @@ const upcomingCycle: Cycle = {
   startDate: "2026-08-04T00:00:00.000Z",
   endDate: "2026-08-17T23:59:59.999Z",
   capacity: 12,
+  projectId: "project-1",
 };
 
 function issue(overrides: Partial<Issue>): Issue {
@@ -32,8 +34,10 @@ function issue(overrides: Partial<Issue>): Issue {
     priority: "MEDIUM",
     kind: "TASK",
     assignee: null,
+    creator: null,
     dueDate: null,
     estimate: 3,
+    projectId: "project-1",
     cycleId: currentCycle.id,
     labels: [],
     createdAt: "2026-07-24T10:00:00.000Z",

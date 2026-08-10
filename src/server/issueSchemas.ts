@@ -26,6 +26,7 @@ export const issueEstimateSchema = z.union([
 
 const cycleIdSchema = z.string().trim().min(1).max(80).nullable();
 const assigneeIdSchema = z.string().trim().min(1).max(80).nullable();
+const projectIdSchema = z.string().trim().min(1).max(120);
 
 const dueDateSchema = z
   .string()
@@ -57,6 +58,7 @@ export const createIssueSchema = z
     assigneeId: assigneeIdSchema,
     dueDate: dueDateSchema.nullable(),
     estimate: issueEstimateSchema.nullable(),
+    projectId: projectIdSchema,
     cycleId: cycleIdSchema,
     labelIds: labelIdsSchema,
   })
@@ -91,6 +93,7 @@ export const listIssuesQuerySchema = z.object({
     .union([z.literal("ALL"), z.literal("ACTIVE"), issueStatusSchema])
     .default("ALL"),
   priority: z.union([z.literal("ALL"), issuePrioritySchema]).default("ALL"),
+  projectId: z.string().trim().min(1).max(120).optional(),
   labelId: z.string().trim().min(1).max(80).optional(),
   assigneeId: z.string().trim().min(1).max(80).optional(),
   q: z.string().trim().max(100).optional(),

@@ -9,6 +9,7 @@ const validIssue = {
   assigneeId: null,
   dueDate: "2026-07-29",
   estimate: 5,
+  projectId: "project-1",
   cycleId: "cycle-30",
   labelIds: ["label-customer", "label-backend"],
 } as const;
@@ -34,6 +35,7 @@ describe("createIssueSchema", () => {
     ["unsupported estimate", { estimate: 4 }],
     ["empty cycle ID", { cycleId: "" }],
     ["empty assignee ID", { assigneeId: "" }],
+    ["empty project ID", { projectId: "" }],
     ["short description", { description: "Too short" }],
   ])("rejects %s", (_, change) => {
     const result = createIssueSchema.safeParse({

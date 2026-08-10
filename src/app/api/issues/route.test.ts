@@ -129,6 +129,7 @@ describe("/api/issues organization boundary", () => {
       assigneeId: null,
       dueDate: null,
       estimate: 3,
+      projectId: "organization-1-general",
       cycleId: null,
       labelIds: [],
     };

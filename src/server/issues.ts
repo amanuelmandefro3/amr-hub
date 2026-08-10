@@ -41,6 +41,9 @@ const issueInclude = {
       },
     },
   },
+  creator: {
+    select: { id: true, name: true, email: true },
+  },
   cycle: true,
 } satisfies Prisma.IssueInclude;
 
@@ -69,8 +72,10 @@ function serializeIssue(issue: StoredIssue): Issue {
     priority: issue.priority as IssuePriority,
     kind: issue.kind as IssueKind,
     assignee: serializeAssignee(issue.assignee),
+    creator: issue.creator,
     dueDate: issue.dueDate?.toISOString() ?? null,
     estimate: issue.estimate as Issue["estimate"],
+    projectId: issue.projectId,
     cycleId: issue.cycleId,
     labels: issue.labels.map(({ label }) => ({
       id: label.id,
@@ -135,6 +140,7 @@ export async function listLabels(
 export type IssueListFilters = {
   status?: "ALL" | "ACTIVE" | IssueStatus;
   priority?: "ALL" | IssuePriority;
+  projectId?: string;
   labelId?: string;
   assigneeId?: string;
   q?: string;
@@ -148,6 +154,10 @@ export async function listIssues(
   filters: IssueListFilters = {},
 ) {
   const where: Prisma.IssueWhereInput = { organizationId };
+
+  if (filters.projectId) {
+    where.projectId = filters.projectId;
+  }
 
   if (filters.status === "ACTIVE") {
     where.status = { not: "DONE" };
@@ -216,12 +226,13 @@ export async function createIssue(
 ) {
   await ensureWorkspaceLabels(actor.organizationId);
   await validateLabelIds(input.labelIds, actor.organizationId);
-  await validateCycleId(input.cycleId, actor.organizationId);
+  const project = await validateProjectId(input.projectId, actor.organizationId);
+  await validateCycleId(input.cycleId, project.id);
   await validateAssigneeId(input.assigneeId, actor.organizationId);
 
   const issue = await prisma.$transaction(async (transaction) => {
     const latestIssue = await transaction.issue.findFirst({
-      where: { organizationId: actor.organizationId },
+      where: { projectId: input.projectId },
       orderBy: { sequence: "desc" },
       select: { sequence: true },
     });
@@ -231,9 +242,10 @@ export async function createIssue(
     return transaction.issue.create({
       data: {
         ...fields,
-        id: `${actor.organizationKey}-${sequence}`,
+        id: `${project.key}-${sequence}`,
         sequence,
         organizationId: actor.organizationId,
+        creatorId: actor.id,
         status: "OPEN",
         dueDate: dueDate ? parseDueDate(dueDate) : null,
         activity: {
@@ -255,6 +267,26 @@ export async function createIssue(
   });
 
   return serializeIssue(issue);
+}
+
+export class UnknownProjectError extends Error {
+  constructor() {
+    super("The selected project does not exist");
+    this.name = "UnknownProjectError";
+  }
+}
+
+async function validateProjectId(projectId: string, organizationId: string) {
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, organizationId },
+    select: { id: true, key: true },
+  });
+
+  if (!project) {
+    throw new UnknownProjectError();
+  }
+
+  return project;
 }
 
 function parseDueDate(value: string) {
@@ -299,14 +331,14 @@ export class UnknownLabelError extends Error {
 
 async function validateCycleId(
   cycleId: string | null | undefined,
-  organizationId: string,
+  projectId: string,
 ) {
   if (!cycleId) return null;
 
   const cycle = await prisma.cycle.findFirst({
     where: {
       id: cycleId,
-      organizationId,
+      projectId,
     },
     select: { name: true },
   });
@@ -492,13 +524,19 @@ export async function updateIssue(
   updates: IssueUpdates,
   actor: WorkspaceActor,
 ) {
+  const existing = await prisma.issue.findFirst({
+    where: { id, organizationId: actor.organizationId },
+    select: { projectId: true },
+  });
+  if (!existing) return null;
+
   if (updates.labelIds) {
     await ensureWorkspaceLabels(actor.organizationId);
     await validateLabelIds(updates.labelIds, actor.organizationId);
   }
   const nextCycleName = await validateCycleId(
     updates.cycleId,
-    actor.organizationId,
+    existing.projectId,
   );
   const nextAssigneeName = await validateAssigneeId(
     updates.assigneeId,

@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createCycleSchema } from "../../../server/projectSchemas";
+import { NextResponse } from "next/server";
+import { createProjectSchema } from "../../../server/projectSchemas";
 import {
-  createCycle,
-  DuplicateCycleNameError,
-  listCycles,
-  UnknownProjectError,
-} from "../../../server/cycles";
+  createProject,
+  DuplicateProjectKeyError,
+  DuplicateProjectNameError,
+  listProjects,
+} from "../../../server/projects";
 import {
   actorFromSession,
   getWorkspaceSession,
@@ -16,34 +16,30 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
   if (!session.workspace) return organizationRequiredResponse();
 
-  const projectId = request.nextUrl.searchParams.get("projectId") ?? undefined;
-
   try {
-    return NextResponse.json(
-      await listCycles(session.workspace.id, projectId),
-    );
+    return NextResponse.json(await listProjects(session.workspace.id));
   } catch (error) {
-    console.error("Failed to load cycles", error);
+    console.error("Failed to load projects", error);
     return NextResponse.json(
-      { error: "Cycles could not be loaded" },
+      { error: "Projects could not be loaded" },
       { status: 500 },
     );
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   const session = await getWorkspaceSession(request);
   if (!session) return unauthorizedResponse();
   if (!session.workspace) return organizationRequiredResponse();
   if (session.workspace.role === "viewer") return viewerForbiddenResponse();
 
   try {
-    const validation = createCycleSchema.safeParse(await request.json());
+    const validation = createProjectSchema.safeParse(await request.json());
 
     if (!validation.success) {
       return NextResponse.json(
@@ -56,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      await createCycle(validation.data, actorFromSession(session)),
+      await createProject(validation.data, actorFromSession(session)),
       { status: 201 },
     );
   } catch (error) {
@@ -68,15 +64,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (
-      error instanceof UnknownProjectError ||
-      error instanceof DuplicateCycleNameError
+      error instanceof DuplicateProjectKeyError ||
+      error instanceof DuplicateProjectNameError
     ) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: error.message }, { status: 409 });
     }
 
-    console.error("Failed to create cycle", error);
+    console.error("Failed to create project", error);
     return NextResponse.json(
-      { error: "Cycle could not be created" },
+      { error: "Project could not be created" },
       { status: 500 },
     );
   }

@@ -73,6 +73,15 @@ export type Cycle = {
   startDate: string;
   endDate: string;
   capacity: number;
+  projectId: string;
+};
+
+export type NewCycleInput = {
+  projectId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
 };
 
 export type Issue = {
@@ -83,8 +92,10 @@ export type Issue = {
   priority: IssuePriority;
   kind: IssueKind;
   assignee: WorkspaceMember | null;
+  creator: WorkspaceMember | null;
   dueDate: string | null;
   estimate: IssueEstimate | null;
+  projectId: string;
   cycleId: string | null;
   labels: WorkspaceLabel[];
   createdAt: string;
@@ -94,7 +105,13 @@ export type Issue = {
 
 export type NewIssueInput = Pick<
   Issue,
-  "title" | "description" | "priority" | "kind" | "estimate" | "cycleId"
+  | "title"
+  | "description"
+  | "priority"
+  | "kind"
+  | "estimate"
+  | "cycleId"
+  | "projectId"
 > & {
   assigneeId: string | null;
   dueDate: string | null;
