@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  CalendarRange,
+  FolderKanban,
   LayoutDashboard,
   ListTodo,
   LogOut,
@@ -12,13 +12,15 @@ import {
   UserRound,
 } from "lucide-react";
 import { authClient } from "../lib/auth-client";
+import { useProjects } from "./ProjectProvider";
 import { CommandPaletteHint } from "./components/CommandPalette";
+import { NotificationInbox } from "./components/NotificationInbox";
 import { ThemeToggle } from "./components/ThemeToggle";
 
 const links = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Issues", href: "/issues", icon: ListTodo },
-  { label: "Cycles", href: "/cycles", icon: CalendarRange },
 ];
 
 export default function NavBar() {
@@ -28,6 +30,7 @@ export default function NavBar() {
   const { data: activeOrganization } = authClient.useActiveOrganization();
   const { data: activeMember } = authClient.useActiveMember();
   const isViewer = activeMember?.role === "viewer";
+  const { projects, activeProjectId, setActiveProjectId } = useProjects();
 
   useEffect(() => {
     if (isViewer) return;
@@ -101,6 +104,29 @@ export default function NavBar() {
           ))}
         </nav>
 
+        <nav className="project-switcher" aria-label="Projects">
+          <span className="nav-label">Projects</span>
+          {projects.length === 0 ? (
+            <p className="project-switcher-empty">No projects yet</p>
+          ) : (
+            projects.map((project) => (
+              <Link
+                key={project.id}
+                href={`/projects/${project.id}`}
+                onClick={() => setActiveProjectId(project.id)}
+                className={
+                  activeProjectId === project.id
+                    ? "project-switcher-item active"
+                    : "project-switcher-item"
+                }
+              >
+                <span style={{ background: project.color ?? "var(--gray-300)" }} />
+                <span>{project.name}</span>
+              </Link>
+            ))
+          )}
+        </nav>
+
         <div className="sidebar-spacer" />
 
         <div className="user-row">
@@ -115,6 +141,7 @@ export default function NavBar() {
                   : "Workspace member"}
             </small>
           </Link>
+          <NotificationInbox openUpward />
           <ThemeToggle />
           <button
             className="sidebar-signout"
@@ -144,6 +171,7 @@ export default function NavBar() {
               <Icon size={19} aria-hidden="true" />
             </Link>
           ))}
+          <NotificationInbox />
           <ThemeToggle />
           {!isViewer && (
             <Link

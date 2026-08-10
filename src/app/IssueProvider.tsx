@@ -13,6 +13,7 @@ import {
   type Issue,
   type IssueStatus,
   type IssueUpdates,
+  type NewCycleInput,
   type NewIssueInput,
   type SavedView,
   type SavedViewInput,
@@ -38,6 +39,7 @@ type IssueContextValue = {
   addComment: (issueId: string, body: string) => Promise<boolean>;
   createSavedView: (view: SavedViewInput) => Promise<SavedView>;
   deleteSavedView: (id: string) => Promise<boolean>;
+  createCycle: (cycle: NewCycleInput) => Promise<Cycle>;
   refreshIssues: () => Promise<void>;
 };
 
@@ -281,6 +283,23 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const createCycle = useCallback(async (input: NewCycleInput) => {
+    setError(null);
+
+    try {
+      const cycle = await apiRequest<Cycle>("/api/cycles", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+      setCycles((current) => [...current, cycle]);
+      return cycle;
+    } catch (requestError) {
+      const message = messageFrom(requestError, "Cycle could not be created");
+      setError(message);
+      throw new Error(message);
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       issues,
@@ -295,6 +314,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
       addComment,
       createSavedView,
       deleteSavedView,
+      createCycle,
       refreshIssues,
     }),
     [
@@ -310,6 +330,7 @@ export function IssueProvider({ children }: { children: React.ReactNode }) {
       addComment,
       createSavedView,
       deleteSavedView,
+      createCycle,
       refreshIssues,
     ],
   );

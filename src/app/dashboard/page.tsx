@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useIssues } from "../IssueProvider";
+import { useProjects } from "../ProjectProvider";
 import { authClient } from "../../lib/auth-client";
 import { WorkspaceActivity } from "../components/WorkspaceActivity";
 import { WorkspaceLoading } from "../components/WorkspaceLoading";
@@ -73,6 +74,7 @@ function buildThroughput(issues: Issue[], now: Date) {
 
 export default function Home() {
   const { issues, cycles, isLoading } = useIssues();
+  const { projects } = useProjects();
   const { data: activeMember } = authClient.useActiveMember();
   const isViewer = activeMember?.role === "viewer";
 
@@ -285,7 +287,10 @@ export default function Home() {
                   style={{ width: `${cycleMetrics.completionPercent}%` }}
                 />
               </div>
-              <Link className="cycle-panel-link" href="/cycles">
+              <Link
+                className="cycle-panel-link"
+                href={`/projects/${currentCycle.projectId}/cycles`}
+              >
                 View cycle plan <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </>
@@ -293,12 +298,65 @@ export default function Home() {
             <div className="cycle-panel-empty">
               <Clock3 size={22} aria-hidden="true" />
               <h2>No active cycle</h2>
-              <Link className="text-link" href="/cycles">
+              <Link className="text-link" href="/projects">
                 Open cycle planning
               </Link>
             </div>
           )}
         </article>
+      </section>
+
+      <section className="panel" style={{ marginBottom: 16 }}>
+        <div className="panel-header">
+          <div>
+            <h2>Projects</h2>
+            <p>Delivery progress across the workspace</p>
+          </div>
+          <Link className="text-link" href="/projects">
+            View all <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
+        {projects.length === 0 ? (
+          <p className="metric-note neutral">No projects yet.</p>
+        ) : (
+          <div className="project-grid">
+            {projects.slice(0, 4).map((project) => {
+              const projectProgress =
+                project.issueCount === 0
+                  ? 0
+                  : Math.round(
+                      (project.doneIssueCount / project.issueCount) * 100,
+                    );
+              return (
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="project-card"
+                  key={project.id}
+                >
+                  <div className="project-card-header">
+                    <div className="project-card-title">
+                      <span
+                        className="project-color-dot"
+                        style={{ background: project.color ?? "var(--gray-300)" }}
+                      />
+                      <h3>{project.name}</h3>
+                    </div>
+                  </div>
+                  <div className="project-progress-track">
+                    <div
+                      className="project-progress-fill"
+                      style={{ width: `${projectProgress}%` }}
+                    />
+                  </div>
+                  <div className="project-card-meta">
+                    <span className="project-card-key">{project.key}</span>
+                    <span>{projectProgress}% done</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section className="dashboard-grid lower-grid">

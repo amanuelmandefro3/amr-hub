@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Calendar,
   CornerDownLeft,
+  FolderKanban,
   LayoutDashboard,
   ListTodo,
   Plus,
@@ -25,9 +25,10 @@ type PaletteResult = {
 
 const STATIC_COMMANDS: PaletteResult[] = [
   { id: "new-issue", label: "Create new issue", href: "/issues/new", group: "Actions", icon: Plus },
+  { id: "new-project", label: "Create new project", href: "/projects/new", group: "Actions", icon: Plus },
   { id: "nav-overview", label: "Go to Overview", href: "/dashboard", group: "Navigate", icon: LayoutDashboard },
+  { id: "nav-projects", label: "Go to Projects", href: "/projects", group: "Navigate", icon: FolderKanban },
   { id: "nav-issues", label: "Go to Issues", href: "/issues", group: "Navigate", icon: ListTodo },
-  { id: "nav-cycles", label: "Go to Cycles", href: "/cycles", group: "Navigate", icon: Calendar },
   { id: "nav-account", label: "Go to Account", href: "/account", group: "Navigate", icon: UserRound },
 ];
 
