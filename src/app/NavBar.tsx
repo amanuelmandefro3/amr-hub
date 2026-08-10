@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  ChevronsLeft,
+  ChevronsRight,
   FolderKanban,
   LayoutDashboard,
   ListTodo,
@@ -13,6 +15,7 @@ import {
 } from "lucide-react";
 import { authClient } from "../lib/auth-client";
 import { useProjects } from "./ProjectProvider";
+import { useSidebarCollapsed } from "./useSidebarCollapsed";
 import { CommandPaletteHint } from "./components/CommandPalette";
 import { NotificationInbox } from "./components/NotificationInbox";
 import { ThemeToggle } from "./components/ThemeToggle";
@@ -31,6 +34,7 @@ export default function NavBar() {
   const { data: activeMember } = authClient.useActiveMember();
   const isViewer = activeMember?.role === "viewer";
   const { projects, activeProjectId, setActiveProjectId } = useProjects();
+  const { isCollapsed, toggle: toggleCollapsed } = useSidebarCollapsed();
 
   useEffect(() => {
     if (isViewer) return;
@@ -71,21 +75,39 @@ export default function NavBar() {
 
   return (
     <>
-      <aside className="app-sidebar">
+      <aside className={isCollapsed ? "app-sidebar collapsed" : "app-sidebar"}>
         <div className="brand">
           <span className="brand-mark">A</span>
-          <span>
+          <span className="brand-text">
             <strong>AMR Hub</strong>
             <small>{activeOrganization?.name ?? "Product workspace"}</small>
           </span>
+          <button
+            className="sidebar-collapse-toggle"
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? (
+              <ChevronsRight size={15} aria-hidden="true" />
+            ) : (
+              <ChevronsLeft size={15} aria-hidden="true" />
+            )}
+          </button>
         </div>
 
         <CommandPaletteHint />
 
         {!isViewer && (
-          <Link className="new-issue-button" href="/issues/new">
+          <Link
+            className="new-issue-button"
+            href="/issues/new"
+            aria-label="New issue"
+            title="New issue"
+          >
             <Plus size={16} strokeWidth={2.2} aria-hidden="true" />
-            New issue
+            <span className="new-issue-label">New issue</span>
             <kbd>C</kbd>
           </Link>
         )}
@@ -97,9 +119,11 @@ export default function NavBar() {
               key={href}
               href={href}
               className={isActive(href) ? "nav-link active" : "nav-link"}
+              aria-label={label}
+              title={label}
             >
               <Icon size={17} aria-hidden="true" />
-              {label}
+              <span className="nav-link-label">{label}</span>
             </Link>
           ))}
         </nav>
@@ -119,6 +143,8 @@ export default function NavBar() {
                     ? "project-switcher-item active"
                     : "project-switcher-item"
                 }
+                aria-label={project.name}
+                title={project.name}
               >
                 <span style={{ background: project.color ?? "var(--gray-300)" }} />
                 <span>{project.name}</span>
@@ -193,6 +219,14 @@ export default function NavBar() {
           >
             <UserRound size={19} aria-hidden="true" />
           </Link>
+          <button
+            className="mobile-nav-link"
+            type="button"
+            onClick={() => void signOut()}
+            aria-label="Sign out"
+          >
+            <LogOut size={19} aria-hidden="true" />
+          </button>
         </nav>
       </header>
     </>
