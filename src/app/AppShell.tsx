@@ -2,6 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { IssueProvider } from "./IssueProvider";
+import { ProjectProvider } from "./ProjectProvider";
+import { NotificationProvider } from "./NotificationProvider";
 import { CommandPalette } from "./components/CommandPalette";
 import NavBar from "./NavBar";
 
@@ -31,12 +33,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <IssueProvider>
-      <div className="app-shell">
-        <NavBar />
-        <main className="app-content">{children}</main>
-        <CommandPalette />
-      </div>
-    </IssueProvider>
+    <ProjectProvider>
+      <NotificationProvider>
+        <IssueProvider>
+          <div className="app-shell">
+            <NavBar />
+            <main className="app-content">{children}</main>
+            <CommandPalette />
+          </div>
+        </IssueProvider>
+      </NotificationProvider>
+    </ProjectProvider>
   );
 }

@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../prisma/client";
+import { notifyRecipients } from "./notifications";
 import {
   KIND_LABELS,
   PRIORITY_LABELS,
@@ -97,6 +98,10 @@ function serializeIssue(issue: StoredIssue): Issue {
       createdAt: event.createdAt.toISOString(),
     })),
   };
+}
+
+function watcherUserIds(issue: Pick<StoredIssue, "creatorId" | "assignee">) {
+  return [issue.creatorId, issue.assignee?.userId];
 }
 
 export async function ensureWorkspaceLabels(organizationId: string) {
@@ -265,6 +270,18 @@ export async function createIssue(
       include: issueInclude,
     });
   });
+
+  if (issue.assignee) {
+    await notifyRecipients([issue.assignee.userId], {
+      type: "ISSUE_ASSIGNED",
+      title: `Assigned: ${issue.title}`,
+      body: `${actor.name} assigned ${issue.id} to you`,
+      organizationId: actor.organizationId,
+      projectId: issue.projectId,
+      issueId: issue.id,
+      actorId: actor.id,
+    });
+  }
 
   return serializeIssue(issue);
 }
@@ -543,7 +560,7 @@ export async function updateIssue(
     actor.organizationId,
   );
 
-  const issue = await prisma.$transaction(async (transaction) => {
+  const result = await prisma.$transaction(async (transaction) => {
     const current = await transaction.issue.findFirst({
       where: {
         id,
@@ -561,11 +578,12 @@ export async function updateIssue(
       nextAssigneeName,
       actor,
     );
+    const activityTypes = activity.map((event) => event.type);
     const changed = activity.length > 0;
-    if (!changed) return current;
+    if (!changed) return { issue: current, activityTypes };
     const { dueDate, labelIds, ...fields } = updates;
 
-    return transaction.issue.update({
+    const issue = await transaction.issue.update({
       where: { id },
       data: {
         ...fields,
@@ -588,9 +606,40 @@ export async function updateIssue(
       },
       include: issueInclude,
     });
+
+    return { issue, activityTypes };
   });
 
-  return issue ? serializeIssue(issue) : null;
+  if (!result) return null;
+  const { issue, activityTypes } = result;
+
+  if (activityTypes.includes("ASSIGNEE_CHANGED") && issue.assignee) {
+    await notifyRecipients([issue.assignee.userId], {
+      type: "ISSUE_ASSIGNED",
+      title: `Assigned: ${issue.title}`,
+      body: `${actor.name} assigned ${issue.id} to you`,
+      organizationId: actor.organizationId,
+      projectId: issue.projectId,
+      issueId: issue.id,
+      actorId: actor.id,
+    });
+  }
+
+  if (activityTypes.includes("STATUS_CHANGED")) {
+    await notifyRecipients(watcherUserIds(issue), {
+      type: "ISSUE_STATUS_CHANGED",
+      title: `${issue.id} status changed`,
+      body: `${actor.name} changed ${issue.id} to ${
+        STATUS_LABELS[issue.status as IssueStatus]
+      }`,
+      organizationId: actor.organizationId,
+      projectId: issue.projectId,
+      issueId: issue.id,
+      actorId: actor.id,
+    });
+  }
+
+  return serializeIssue(issue);
 }
 
 export async function addComment(
@@ -626,6 +675,16 @@ export async function addComment(
       },
     },
     include: issueInclude,
+  });
+
+  await notifyRecipients(watcherUserIds(issue), {
+    type: "ISSUE_COMMENTED",
+    title: `New comment on ${issue.id}`,
+    body: `${actor.name} commented on ${issue.id}`,
+    organizationId: actor.organizationId,
+    projectId: issue.projectId,
+    issueId: issue.id,
+    actorId: actor.id,
   });
 
   return serializeIssue(issue);
