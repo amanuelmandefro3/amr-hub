@@ -1,7 +1,8 @@
 export type NotificationType =
   | "ISSUE_ASSIGNED"
   | "ISSUE_STATUS_CHANGED"
-  | "ISSUE_COMMENTED";
+  | "ISSUE_COMMENTED"
+  | "ISSUE_MENTIONED";
 
 export type Notification = {
   id: string;

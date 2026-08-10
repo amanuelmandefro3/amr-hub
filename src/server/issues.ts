@@ -2,6 +2,10 @@ import { Prisma } from "@prisma/client";
 import prisma from "../../prisma/client";
 import { notifyRecipients } from "./notifications";
 import {
+  extractCommentMentionIds,
+  extractMentionedMemberIds,
+} from "./richText";
+import {
   KIND_LABELS,
   PRIORITY_LABELS,
   STATUS_LABELS,
@@ -102,6 +106,20 @@ function serializeIssue(issue: StoredIssue): Issue {
 
 function watcherUserIds(issue: Pick<StoredIssue, "creatorId" | "assignee">) {
   return [issue.creatorId, issue.assignee?.userId];
+}
+
+async function resolveMemberUserIds(
+  memberIds: string[],
+  organizationId: string,
+) {
+  if (memberIds.length === 0) return [];
+
+  const members = await prisma.member.findMany({
+    where: { id: { in: memberIds }, organizationId },
+    select: { userId: true },
+  });
+
+  return members.map((member) => member.userId);
 }
 
 export async function ensureWorkspaceLabels(organizationId: string) {
@@ -276,6 +294,23 @@ export async function createIssue(
       type: "ISSUE_ASSIGNED",
       title: `Assigned: ${issue.title}`,
       body: `${actor.name} assigned ${issue.id} to you`,
+      organizationId: actor.organizationId,
+      projectId: issue.projectId,
+      issueId: issue.id,
+      actorId: actor.id,
+    });
+  }
+
+  const mentionedMemberIds = extractMentionedMemberIds(issue.description);
+  if (mentionedMemberIds.length > 0) {
+    const mentionedUserIds = await resolveMemberUserIds(
+      mentionedMemberIds,
+      actor.organizationId,
+    );
+    await notifyRecipients(mentionedUserIds, {
+      type: "ISSUE_MENTIONED",
+      title: `Mentioned in: ${issue.title}`,
+      body: `${actor.name} mentioned you in ${issue.id}`,
       organizationId: actor.organizationId,
       projectId: issue.projectId,
       issueId: issue.id,
@@ -639,6 +674,25 @@ export async function updateIssue(
     });
   }
 
+  if (updates.description !== undefined) {
+    const mentionedMemberIds = extractMentionedMemberIds(issue.description);
+    if (mentionedMemberIds.length > 0) {
+      const mentionedUserIds = await resolveMemberUserIds(
+        mentionedMemberIds,
+        actor.organizationId,
+      );
+      await notifyRecipients(mentionedUserIds, {
+        type: "ISSUE_MENTIONED",
+        title: `Mentioned in: ${issue.title}`,
+        body: `${actor.name} mentioned you in ${issue.id}`,
+        organizationId: actor.organizationId,
+        projectId: issue.projectId,
+        issueId: issue.id,
+        actorId: actor.id,
+      });
+    }
+  }
+
   return serializeIssue(issue);
 }
 
@@ -677,7 +731,28 @@ export async function addComment(
     include: issueInclude,
   });
 
-  await notifyRecipients(watcherUserIds(issue), {
+  const mentionedMemberIds = extractCommentMentionIds(body);
+  const mentionedUserIds = await resolveMemberUserIds(
+    mentionedMemberIds,
+    actor.organizationId,
+  );
+
+  if (mentionedUserIds.length > 0) {
+    await notifyRecipients(mentionedUserIds, {
+      type: "ISSUE_MENTIONED",
+      title: `Mentioned in: ${issue.title}`,
+      body: `${actor.name} mentioned you in a comment on ${issue.id}`,
+      organizationId: actor.organizationId,
+      projectId: issue.projectId,
+      issueId: issue.id,
+      actorId: actor.id,
+    });
+  }
+
+  const remainingWatchers = watcherUserIds(issue).filter(
+    (userId) => !mentionedUserIds.includes(userId ?? ""),
+  );
+  await notifyRecipients(remainingWatchers, {
     type: "ISSUE_COMMENTED",
     title: `New comment on ${issue.id}`,
     body: `${actor.name} commented on ${issue.id}`,

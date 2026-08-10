@@ -37,6 +37,7 @@ import {
   type WorkspaceMember,
 } from "../../data/issues";
 import { formatCycleDateRange } from "../../data/cycles";
+import { stripHtml } from "../../data/richText";
 import {
   KindIcon,
   PriorityBadge,
@@ -44,6 +45,10 @@ import {
 } from "../../components/IssueVisuals";
 import { WorkspaceLoading } from "../../components/WorkspaceLoading";
 import { IssueLabelChip } from "../../components/IssueLabelChip";
+import { RichTextEditor } from "../../components/RichTextEditor";
+import { DescriptionView } from "../../components/DescriptionView";
+import { MentionTextarea } from "../../components/MentionTextarea";
+import { CommentBody } from "../../components/CommentBody";
 
 const ESTIMATES: IssueEstimate[] = [1, 2, 3, 5, 8];
 
@@ -196,7 +201,8 @@ function IssueDetail({
       new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
   );
   const canSave =
-    draftTitle.trim().length >= 4 && draftDescription.trim().length >= 12;
+    draftTitle.trim().length >= 4 &&
+    stripHtml(draftDescription).length >= 12;
 
   const handleComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -226,7 +232,7 @@ function IssueDetail({
     setIsSaving(true);
     const saved = await onUpdateIssue(issue.id, {
       title: draftTitle.trim(),
-      description: draftDescription.trim(),
+      description: draftDescription,
     });
     if (saved) setIsEditing(false);
     setIsSaving(false);
@@ -316,16 +322,14 @@ function IssueDetail({
             {isEditing ? (
               <label className="detail-description-field">
                 <span className="sr-only">Issue description</span>
-                <textarea
+                <RichTextEditor
                   value={draftDescription}
-                  onChange={(event) => setDraftDescription(event.target.value)}
-                  rows={8}
-                  maxLength={2000}
+                  onChange={setDraftDescription}
+                  members={members}
                 />
-                <small>{draftDescription.length} / 2,000</small>
               </label>
             ) : (
-              <p className="issue-description">{issue.description}</p>
+              <DescriptionView value={issue.description} />
             )}
           </section>
 
@@ -355,7 +359,7 @@ function IssueDetail({
                         {formatCommentDate(item.createdAt)}
                       </time>
                     </header>
-                    <p>{item.body}</p>
+                    <CommentBody body={item.body} />
                   </div>
                 </article>
               ))}
@@ -366,10 +370,11 @@ function IssueDetail({
                 <span className="avatar avatar-green">{currentUserInitials}</span>
                 <label>
                   <span className="sr-only">Add a comment</span>
-                  <textarea
+                  <MentionTextarea
                     value={comment}
-                    onChange={(event) => setComment(event.target.value)}
-                    placeholder="Add context, an update, or a question..."
+                    onChange={setComment}
+                    members={members}
+                    placeholder="Add context, an update, or a question... Type @ to mention someone."
                     rows={3}
                     maxLength={1000}
                   />

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sanitizeDescriptionHtml, stripHtml } from "./richText";
 
 export const issueStatusSchema = z.enum([
   "BACKLOG",
@@ -49,10 +50,19 @@ const labelIdsSchema = z
   .max(10)
   .transform((labelIds) => [...new Set(labelIds)]);
 
+const descriptionSchema = z
+  .string()
+  .trim()
+  .max(20000)
+  .transform((value) => sanitizeDescriptionHtml(value))
+  .refine((value) => stripHtml(value).length >= 12, {
+    message: "Add enough detail for someone else to understand the issue.",
+  });
+
 export const createIssueSchema = z
   .object({
     title: z.string().trim().min(4).max(255),
-    description: z.string().trim().min(12).max(2000),
+    description: descriptionSchema,
     priority: issuePrioritySchema,
     kind: issueKindSchema,
     assigneeId: assigneeIdSchema,
@@ -67,7 +77,7 @@ export const createIssueSchema = z
 export const updateIssueSchema = z
   .object({
     title: z.string().trim().min(4).max(255).optional(),
-    description: z.string().trim().min(12).max(2000).optional(),
+    description: descriptionSchema.optional(),
     status: issueStatusSchema.optional(),
     priority: issuePrioritySchema.optional(),
     kind: issueKindSchema.optional(),
