@@ -121,12 +121,12 @@ export default function LandingPage() {
           <div className="landing-hero-copy">
             <p className="landing-kicker">
               <Activity size={14} aria-hidden="true" />
-              Product operations in one focused workspace
+              Mission control // Product operations
             </p>
-            <h1>AMR Hub</h1>
+            <h1>Clear the queue.<br />Ship the mission.</h1>
             <p className="landing-hero-statement">
-              See what needs attention, decide what ships next, and keep every
-              handoff accountable.
+              One focused command center for triage, delivery cycles, and every
+              handoff between idea and shipped.
             </p>
             <div className="landing-hero-actions">
               <Link className="landing-primary-cta" href="/signup">

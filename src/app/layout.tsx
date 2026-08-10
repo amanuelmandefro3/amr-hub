@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./retro.css";
 import { AppShell } from "./AppShell";
 
 export const metadata: Metadata = {
@@ -18,10 +19,10 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og.png",
-        width: 1731,
-        height: 909,
-        alt: "AMR Hub issue workspace overview",
+        url: "/og-retro.png",
+        width: 1729,
+        height: 910,
+        alt: "AMR Hub retro operations console",
       },
     ],
   },
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "AMR Hub",
     description: "Track the work that needs attention.",
-    images: ["/og.png"],
+    images: ["/og-retro.png"],
   },
 };
 

@@ -139,10 +139,10 @@ export default function Home() {
     <div className="page">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Product engineering</p>
-          <h1>Overview</h1>
+          <p className="eyebrow">Workspace status // Live</p>
+          <h1>Mission control</h1>
           <p className="page-description">
-            Track the work that needs attention and keep delivery moving.
+            Clear the queue, protect the cycle, and ship what matters.
           </p>
         </div>
         {!isViewer && (
