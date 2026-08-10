@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, CalendarRange, Plus } from "lucide-react";
 import { apiRequest, useIssues, type IssueListResponse } from "../../IssueProvider";
 import { useProjects } from "../../ProjectProvider";
+import { useCreateIssueModal } from "../../CreateIssueModalProvider";
 import { authClient } from "../../../lib/auth-client";
 import { IssueBoard } from "../../components/IssueBoard";
 import { WorkspaceLoading } from "../../components/WorkspaceLoading";
@@ -18,6 +19,7 @@ export default function ProjectDetailPage() {
   const { projects, isLoading: isLoadingProjects, setActiveProjectId } =
     useProjects();
   const { updateStatus } = useIssues();
+  const { open: openCreateIssueModal } = useCreateIssueModal();
   const { data: activeMember } = authClient.useActiveMember();
   const isViewer = activeMember?.role === "viewer";
 
@@ -124,13 +126,14 @@ export default function ProjectDetailPage() {
             Cycles
           </Link>
           {!isViewer && (
-            <Link
+            <button
               className="primary-button"
-              href={`/issues/new?project=${projectId}`}
+              type="button"
+              onClick={() => openCreateIssueModal(projectId)}
             >
               <Plus size={16} aria-hidden="true" />
               New issue
-            </Link>
+            </button>
           )}
         </div>
       </header>

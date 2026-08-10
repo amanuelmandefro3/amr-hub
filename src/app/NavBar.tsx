@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { authClient } from "../lib/auth-client";
 import { useProjects } from "./ProjectProvider";
+import { useCreateIssueModal } from "./CreateIssueModalProvider";
 import { useSidebarCollapsed } from "./useSidebarCollapsed";
 import { CommandPaletteHint } from "./components/CommandPalette";
 import { NotificationInbox } from "./components/NotificationInbox";
@@ -35,6 +36,7 @@ export default function NavBar() {
   const isViewer = activeMember?.role === "viewer";
   const { projects, activeProjectId, setActiveProjectId } = useProjects();
   const { isCollapsed, toggle: toggleCollapsed } = useSidebarCollapsed();
+  const { open: openCreateIssueModal } = useCreateIssueModal();
 
   useEffect(() => {
     if (isViewer) return;
@@ -49,13 +51,13 @@ export default function NavBar() {
 
       if (event.key.toLowerCase() === "c" && !isEditing) {
         event.preventDefault();
-        router.push("/issues/new");
+        openCreateIssueModal(activeProjectId);
       }
     };
 
     window.addEventListener("keydown", openCreateIssue);
     return () => window.removeEventListener("keydown", openCreateIssue);
-  }, [router, isViewer]);
+  }, [isViewer, activeProjectId, openCreateIssueModal]);
 
   const isActive = (href: string) => currentPath.startsWith(href);
 
@@ -100,16 +102,17 @@ export default function NavBar() {
         <CommandPaletteHint />
 
         {!isViewer && (
-          <Link
+          <button
             className="new-issue-button"
-            href="/issues/new"
+            type="button"
+            onClick={() => openCreateIssueModal(activeProjectId)}
             aria-label="New issue"
             title="New issue"
           >
             <Plus size={16} strokeWidth={2.2} aria-hidden="true" />
             <span className="new-issue-label">New issue</span>
             <kbd>C</kbd>
-          </Link>
+          </button>
         )}
 
         <nav className="primary-nav" aria-label="Primary navigation">
@@ -200,13 +203,14 @@ export default function NavBar() {
           <NotificationInbox />
           <ThemeToggle />
           {!isViewer && (
-            <Link
-              href="/issues/new"
+            <button
+              type="button"
               className="mobile-create-button"
+              onClick={() => openCreateIssueModal(activeProjectId)}
               aria-label="Create issue"
             >
               <Plus size={19} aria-hidden="true" />
-            </Link>
+            </button>
           )}
           <Link
             href="/account"

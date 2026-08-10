@@ -12,6 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useIssues } from "../IssueProvider";
+import { useCreateIssueModal } from "../CreateIssueModalProvider";
 import { authClient } from "../../lib/auth-client";
 
 type PaletteResult = {
@@ -35,6 +36,7 @@ const STATIC_COMMANDS: PaletteResult[] = [
 export function CommandPalette() {
   const router = useRouter();
   const { issues } = useIssues();
+  const { open: openCreateIssueModal } = useCreateIssueModal();
   const { data: activeMember } = authClient.useActiveMember();
   const isViewer = activeMember?.role === "viewer";
   const [isOpen, setIsOpen] = useState(false);
@@ -118,6 +120,12 @@ export function CommandPalette() {
     const result = results[index];
     if (!result) return;
     close();
+
+    if (result.id === "new-issue") {
+      openCreateIssueModal();
+      return;
+    }
+
     router.push(result.href);
   };
 
