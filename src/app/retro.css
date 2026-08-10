@@ -112,6 +112,7 @@ body {
     linear-gradient(color-mix(in srgb, var(--gray-300) 22%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--gray-300) 22%, transparent) 1px, transparent 1px);
   background-size: 24px 24px;
+  background-attachment: fixed;
 }
 
 h1,
