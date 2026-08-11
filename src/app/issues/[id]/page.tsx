@@ -37,7 +37,7 @@ import {
   type WorkspaceMember,
 } from "../../data/issues";
 import { formatCycleDateRange } from "../../data/cycles";
-import { stripHtml } from "../../data/richText";
+import { serializeCommentBody, stripHtml } from "../../data/richText";
 import {
   KindIcon,
   PriorityBadge,
@@ -47,7 +47,6 @@ import { WorkspaceLoading } from "../../components/WorkspaceLoading";
 import { IssueLabelChip } from "../../components/IssueLabelChip";
 import { RichTextEditor } from "../../components/RichTextEditor";
 import { DescriptionView } from "../../components/DescriptionView";
-import { MentionTextarea } from "../../components/MentionTextarea";
 import { CommentBody } from "../../components/CommentBody";
 
 const ESTIMATES: IssueEstimate[] = [1, 2, 3, 5, 8];
@@ -206,7 +205,7 @@ function IssueDetail({
 
   const handleComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const body = comment.trim();
+    const body = serializeCommentBody(comment);
     if (body.length < 2) return;
 
     setIsCommenting(true);
@@ -370,19 +369,17 @@ function IssueDetail({
                 <span className="avatar avatar-green">{currentUserInitials}</span>
                 <label>
                   <span className="sr-only">Add a comment</span>
-                  <MentionTextarea
+                  <RichTextEditor
                     value={comment}
                     onChange={setComment}
                     members={members}
                     placeholder="Add context, an update, or a question... Type @ to mention someone."
-                    rows={3}
-                    maxLength={1000}
                   />
                 </label>
                 <button
                   className="primary-button"
                   type="submit"
-                  disabled={comment.trim().length < 2 || isCommenting}
+                  disabled={stripHtml(comment).length < 2 || isCommenting}
                 >
                   <Send size={15} aria-hidden="true" />
                   {isCommenting ? "Posting..." : "Comment"}

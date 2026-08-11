@@ -53,7 +53,15 @@ export const MentionList = forwardRef<
             selectItem(index);
           }}
         >
-          {item.label}
+          <span className="mention-suggestion-avatar" aria-hidden="true">
+            {item.label
+              .split(" ")
+              .map((part) => part[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase()}
+          </span>
+          <span className="mention-suggestion-label">{item.label}</span>
         </button>
       ))}
     </div>

@@ -117,7 +117,15 @@ export function MentionTextarea({
                 selectMember(member);
               }}
             >
-              {member.name}
+              <span className="mention-suggestion-avatar" aria-hidden="true">
+                {member.name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </span>
+              <span className="mention-suggestion-label">{member.name}</span>
             </button>
           ))}
         </div>

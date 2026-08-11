@@ -37,6 +37,28 @@ export function parseCommentBody(body: string): CommentBodyPart[] {
   return parts;
 }
 
+/** Convert the shared rich-text composer output to the compact comment format. */
+export function serializeCommentBody(value: string): string {
+  if (!looksLikeHtml(value)) return value;
+
+  const serialized = value.replace(
+    /<span\b([^>]*\bdata-type=["']mention["'][^>]*)>([\s\S]*?)<\/span>/gi,
+    (_match, attributes: string, content: string) => {
+      const id = attributes.match(/\bdata-id=["']([^"']+)["']/i)?.[1];
+      const label = attributes.match(/\bdata-label=["']([^"']+)["']/i)?.[1];
+      const text = (label ?? content.replace(/<[^>]*>/g, "")).trim();
+      return id && text ? `@[${text}](${id})` : text;
+    },
+  );
+
+  return serialized
+    .replace(/<br\s*\/?>(\s*)/gi, "\n$1")
+    .replace(/<\/p>\s*<p[^>]*>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .trim();
+}
+
 export function insertMention(
   body: string,
   cursor: number,
