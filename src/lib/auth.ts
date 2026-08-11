@@ -38,6 +38,16 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
     autoSignIn: false,
     requireEmailVerification: true,
+    resetPasswordTokenExpiresIn: 60 * 60,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your AMR Hub password",
+        text: `Reset your AMR Hub password: ${url}\n\nThis link expires in 1 hour. If you didn't request this, you can ignore this email - your password will not change.`,
+        html: `<p>Reset your AMR Hub password.</p><p><a href="${url}">Reset password</a></p><p>This link expires in 1 hour. If you didn't request this, you can ignore this email - your password will not change.</p>`,
+      });
+    },
   },
   emailVerification: {
     sendOnSignUp: true,
