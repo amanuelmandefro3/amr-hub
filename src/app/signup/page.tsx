@@ -9,6 +9,7 @@ import {
   Eye,
   EyeOff,
   LoaderCircle,
+  Mail,
   UserPlus,
 } from "lucide-react";
 import { authClient } from "../../lib/auth-client";
@@ -23,6 +24,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAwaitingVerification, setIsAwaitingVerification] = useState(false);
 
   useEffect(() => {
     if (session) router.replace("/onboarding");
@@ -56,6 +58,7 @@ export default function SignupPage() {
       name: name.trim(),
       email: email.trim(),
       password,
+      callbackURL: "/onboarding",
     });
 
     if (result.error) {
@@ -68,9 +71,41 @@ export default function SignupPage() {
       return;
     }
 
+    if (!result.data.token) {
+      setIsAwaitingVerification(true);
+      setIsSubmitting(false);
+      return;
+    }
+
     router.replace("/onboarding");
     router.refresh();
   };
+
+  if (isAwaitingVerification) {
+    return (
+      <div className="auth-layout">
+        <section className="auth-form-pane">
+          <div className="auth-form-wrap signup-form-wrap">
+            <div className="recovery-complete">
+              <span className="auth-heading-icon">
+                <Mail size={18} aria-hidden="true" />
+              </span>
+              <h1>Check your email</h1>
+              <p>
+                If {email.trim()} isn&apos;t already registered, we just sent
+                a verification link to confirm it. Open it to finish setting
+                up your account.
+              </p>
+              <Link className="primary-button" href="/login">
+                <ArrowLeft size={16} aria-hidden="true" />
+                Return to sign in
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-layout">

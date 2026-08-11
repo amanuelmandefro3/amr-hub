@@ -222,7 +222,8 @@ export async function acceptMemberInvitation(input: {
           id: userId,
           name: input.name,
           email: invitation.email,
-          emailVerified: false,
+          // Claiming the single-use invitation token is itself proof of the invited email.
+          emailVerified: true,
           role: "MEMBER",
         },
         select: {

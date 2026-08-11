@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError } from "better-auth/api";
 import { organization, twoFactor } from "better-auth/plugins";
 import prisma from "../../prisma/client";
+import { sendEmail } from "../server/email";
 import { loadServerEnvironment } from "../server/env";
 import { organizationOnboardingSchema } from "../server/organizationSchemas";
 
@@ -35,7 +36,22 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 12,
     maxPasswordLength: 128,
-    autoSignIn: true,
+    autoSignIn: false,
+    requireEmailVerification: true,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: true,
+    expiresIn: 60 * 60 * 24,
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendEmail({
+        to: user.email,
+        subject: "Verify your email for AMR Hub",
+        text: `Confirm your email address to finish setting up your AMR Hub account: ${url}\n\nThis link expires in 24 hours. If you didn't create this account, you can ignore this email.`,
+        html: `<p>Confirm your email address to finish setting up your AMR Hub account.</p><p><a href="${url}">Verify email</a></p><p>This link expires in 24 hours. If you didn't create this account, you can ignore this email.</p>`,
+      });
+    },
   },
   user: {
     additionalFields: {
