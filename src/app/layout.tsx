@@ -56,8 +56,12 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        {/* Browsers strip the nonce attribute from the DOM after using it
+            (so an XSS payload can't read and reuse it), which otherwise
+            shows up as a spurious hydration mismatch on every load. */}
         <script
           nonce={nonce}
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
         />
         <AppShell>{children}</AppShell>
