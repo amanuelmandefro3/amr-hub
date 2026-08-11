@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
-import { hashPassword } from "better-auth/crypto";
 import prisma from "../../prisma/client";
+import { auth } from "../lib/auth";
 
 const INVITATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -187,72 +187,33 @@ export async function acceptMemberInvitation(input: {
   password: string;
 }) {
   const tokenHash = hashInvitationToken(input.token);
-  const passwordHash = await hashPassword(input.password);
-  const now = new Date();
 
+  const invitation = await prisma.invitation.findUnique({
+    where: { tokenHash },
+  });
+  if (!invitation || invitationState(invitation) !== "PENDING") {
+    throw new InvitationError("INVITATION_INVALID");
+  }
+
+  // Account creation goes through Better Auth's own adapter so invited users
+  // get the same password hashing and account-linking as a direct signup.
+  const context = await auth.$context;
+  let userId: string;
   try {
-    return await prisma.$transaction(async (transaction) => {
-      const invitation = await transaction.invitation.findUnique({
-        where: { tokenHash },
-      });
-
-      if (
-        !invitation ||
-        invitation.status !== "PENDING" ||
-        invitation.expiresAt <= now
-      ) {
-        throw new InvitationError("INVITATION_INVALID");
-      }
-
-      const claimed = await transaction.invitation.updateMany({
-        where: {
-          id: invitation.id,
-          status: "PENDING",
-          expiresAt: { gt: now },
-        },
-        data: { status: "ACCEPTED" },
-      });
-      if (claimed.count !== 1) {
-        throw new InvitationError("INVITATION_INVALID");
-      }
-
-      const userId = randomUUID();
-      const user = await transaction.user.create({
-        data: {
-          id: userId,
-          name: input.name,
-          email: invitation.email,
-          // Claiming the single-use invitation token is itself proof of the invited email.
-          emailVerified: true,
-          role: "MEMBER",
-        },
-        select: {
-          id: true,
-          email: true,
-        },
-      });
-
-      await transaction.account.create({
-        data: {
-          id: randomUUID(),
-          accountId: userId,
-          providerId: "credential",
-          userId,
-          password: passwordHash,
-        },
-      });
-
-      await transaction.member.create({
-        data: {
-          id: randomUUID(),
-          userId,
-          organizationId: invitation.organizationId,
-          role: invitation.role,
-          createdAt: now,
-        },
-      });
-
-      return user;
+    const passwordHash = await context.password.hash(input.password);
+    const user = await context.internalAdapter.createUser({
+      name: input.name,
+      email: invitation.email,
+      // Claiming the single-use invitation token is itself proof of the invited email.
+      emailVerified: true,
+      role: "MEMBER",
+    });
+    userId = user.id;
+    await context.internalAdapter.linkAccount({
+      accountId: userId,
+      providerId: "credential",
+      userId,
+      password: passwordHash,
     });
   } catch (error) {
     if (
@@ -261,6 +222,42 @@ export async function acceptMemberInvitation(input: {
     ) {
       throw new InvitationError("EMAIL_IN_USE");
     }
+    throw error;
+  }
+
+  try {
+    return await prisma.$transaction(async (transaction) => {
+      const claimed = await transaction.invitation.updateMany({
+        where: {
+          id: invitation.id,
+          status: "PENDING",
+          expiresAt: { gt: new Date() },
+        },
+        data: { status: "ACCEPTED" },
+      });
+      if (claimed.count !== 1) {
+        throw new InvitationError("INVITATION_INVALID");
+      }
+
+      await transaction.member.create({
+        data: {
+          id: randomUUID(),
+          userId,
+          organizationId: invitation.organizationId,
+          role: invitation.role,
+          createdAt: new Date(),
+        },
+      });
+
+      return { id: userId, email: invitation.email };
+    });
+  } catch (error) {
+    // The account already exists at this point; don't leave it orphaned if
+    // the invitation was claimed by a concurrent request or expired mid-flight.
+    await prisma.account.deleteMany({
+      where: { userId, providerId: "credential" },
+    });
+    await prisma.user.delete({ where: { id: userId } }).catch(() => {});
     throw error;
   }
 }
