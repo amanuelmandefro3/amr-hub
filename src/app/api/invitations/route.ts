@@ -5,11 +5,7 @@ import {
   InvitationError,
   listWorkspaceAccess,
 } from "../../../server/invitations";
-import {
-  getWorkspaceSession,
-  organizationRequiredResponse,
-  unauthorizedResponse,
-} from "../../../server/session";
+import { requireWorkspaceRole } from "../../../server/session";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +17,13 @@ function forbiddenResponse() {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
-  if (session.workspace.role !== "owner") return forbiddenResponse();
+  const result = await requireWorkspaceRole(
+    request,
+    ["owner"],
+    forbiddenResponse,
+  );
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   try {
     return NextResponse.json(await listWorkspaceAccess(session.workspace.id), {
@@ -40,10 +39,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
-  if (session.workspace.role !== "owner") return forbiddenResponse();
+  const result = await requireWorkspaceRole(
+    request,
+    ["owner"],
+    forbiddenResponse,
+  );
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   try {
     const validation = createInvitationSchema.safeParse(await request.json());

@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
 import { deleteSavedView } from "../../../../server/savedViews";
-import {
-  getWorkspaceSession,
-  organizationRequiredResponse,
-  unauthorizedResponse,
-} from "../../../../server/session";
+import { requireWorkspaceSession } from "../../../../server/session";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
 export async function DELETE(request: Request, context: RouteContext) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
+  const result = await requireWorkspaceSession(request);
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   try {
     const { id } = await context.params;

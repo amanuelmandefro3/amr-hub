@@ -3,10 +3,7 @@ import { createCommentSchema } from "../../../../../server/issueSchemas";
 import { addComment } from "../../../../../server/issues";
 import {
   actorFromSession,
-  getWorkspaceSession,
-  organizationRequiredResponse,
-  unauthorizedResponse,
-  viewerForbiddenResponse,
+  requireWorkspaceRole,
 } from "../../../../../server/session";
 
 type RouteContext = {
@@ -14,10 +11,9 @@ type RouteContext = {
 };
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
-  if (session.workspace.role === "viewer") return viewerForbiddenResponse();
+  const result = await requireWorkspaceRole(request, ["owner", "member"]);
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   try {
     const validation = createCommentSchema.safeParse(await request.json());

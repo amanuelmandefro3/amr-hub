@@ -72,6 +72,32 @@ export function actorFromSession(session: WorkspaceSession) {
   };
 }
 
+export type ActiveWorkspaceSession = WorkspaceSession & {
+  workspace: WorkspaceContext;
+};
+
+export async function requireWorkspaceSession(
+  request: Request,
+): Promise<{ response: NextResponse } | { session: ActiveWorkspaceSession }> {
+  const session = await getWorkspaceSession(request);
+  if (!session) return { response: unauthorizedResponse() };
+  if (!session.workspace) return { response: organizationRequiredResponse() };
+  return { session: session as ActiveWorkspaceSession };
+}
+
+export async function requireWorkspaceRole(
+  request: Request,
+  allowedRoles: string[],
+  forbiddenResponse: () => NextResponse = viewerForbiddenResponse,
+): Promise<{ response: NextResponse } | { session: ActiveWorkspaceSession }> {
+  const result = await requireWorkspaceSession(request);
+  if ("response" in result) return result;
+  if (!allowedRoles.includes(result.session.workspace.role)) {
+    return { response: forbiddenResponse() };
+  }
+  return result;
+}
+
 export function unauthorizedResponse() {
   return NextResponse.json(
     { error: "Authentication required" },

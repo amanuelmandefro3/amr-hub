@@ -9,8 +9,43 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../../../server/session", async () => {
   const { NextResponse } = await import("next/server");
+  const unauthorizedResponse = () =>
+    NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  const organizationRequiredResponse = () =>
+    NextResponse.json(
+      { error: "Organization required", code: "ORGANIZATION_REQUIRED" },
+      { status: 409 },
+    );
+  const viewerForbiddenResponse = () =>
+    NextResponse.json(
+      { error: "Viewers have read-only access to this workspace" },
+      { status: 403 },
+    );
+
+  async function requireWorkspaceSession(request: Request) {
+    const session = await mocks.getWorkspaceSession(request);
+    if (!session) return { response: unauthorizedResponse() };
+    if (!session.workspace) return { response: organizationRequiredResponse() };
+    return { session };
+  }
+
+  async function requireWorkspaceRole(
+    request: Request,
+    allowedRoles: string[],
+    forbiddenResponse = viewerForbiddenResponse,
+  ) {
+    const result = await requireWorkspaceSession(request);
+    if ("response" in result) return result;
+    if (!allowedRoles.includes(result.session.workspace.role)) {
+      return { response: forbiddenResponse() };
+    }
+    return result;
+  }
+
   return {
     getWorkspaceSession: mocks.getWorkspaceSession,
+    requireWorkspaceSession,
+    requireWorkspaceRole,
     actorFromSession: (session: {
       user: { id: string; name: string };
       workspace: { id: string; key: string };
@@ -20,13 +55,9 @@ vi.mock("../../../server/session", async () => {
       organizationId: session.workspace.id,
       organizationKey: session.workspace.key,
     }),
-    unauthorizedResponse: () =>
-      NextResponse.json({ error: "Authentication required" }, { status: 401 }),
-    organizationRequiredResponse: () =>
-      NextResponse.json(
-        { error: "Organization required", code: "ORGANIZATION_REQUIRED" },
-        { status: 409 },
-      ),
+    unauthorizedResponse,
+    organizationRequiredResponse,
+    viewerForbiddenResponse,
   };
 });
 

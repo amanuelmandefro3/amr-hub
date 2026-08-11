@@ -8,18 +8,16 @@ import {
 } from "../../../server/cycles";
 import {
   actorFromSession,
-  getWorkspaceSession,
-  organizationRequiredResponse,
-  unauthorizedResponse,
-  viewerForbiddenResponse,
+  requireWorkspaceRole,
+  requireWorkspaceSession,
 } from "../../../server/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
+  const result = await requireWorkspaceSession(request);
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   const projectId = request.nextUrl.searchParams.get("projectId") ?? undefined;
 
@@ -37,10 +35,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
-  if (session.workspace.role === "viewer") return viewerForbiddenResponse();
+  const result = await requireWorkspaceRole(request, ["owner", "member"]);
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   try {
     const validation = createCycleSchema.safeParse(await request.json());

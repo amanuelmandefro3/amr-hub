@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 import { markAllNotificationsRead } from "../../../../server/notifications";
-import {
-  getWorkspaceSession,
-  organizationRequiredResponse,
-  unauthorizedResponse,
-} from "../../../../server/session";
+import { requireWorkspaceSession } from "../../../../server/session";
 
 export async function POST(request: Request) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
+  const result = await requireWorkspaceSession(request);
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   await markAllNotificationsRead(session.user.id);
 

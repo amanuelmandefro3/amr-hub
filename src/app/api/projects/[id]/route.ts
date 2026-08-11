@@ -7,10 +7,8 @@ import {
   updateProject,
 } from "../../../../server/projects";
 import {
-  getWorkspaceSession,
-  organizationRequiredResponse,
-  unauthorizedResponse,
-  viewerForbiddenResponse,
+  requireWorkspaceRole,
+  requireWorkspaceSession,
 } from "../../../../server/session";
 
 type RouteContext = {
@@ -18,9 +16,9 @@ type RouteContext = {
 };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
+  const result = await requireWorkspaceSession(request);
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   const { id } = await context.params;
   const project = await getProject(id, session.workspace.id);
@@ -33,10 +31,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
-  if (session.workspace.role === "viewer") return viewerForbiddenResponse();
+  const result = await requireWorkspaceRole(request, ["owner", "member"]);
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   try {
     const validation = updateProjectSchema.safeParse(await request.json());

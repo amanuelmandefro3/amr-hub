@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listNotifications } from "../../../server/notifications";
-import {
-  getWorkspaceSession,
-  organizationRequiredResponse,
-  unauthorizedResponse,
-} from "../../../server/session";
+import { requireWorkspaceSession } from "../../../server/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const session = await getWorkspaceSession(request);
-  if (!session) return unauthorizedResponse();
-  if (!session.workspace) return organizationRequiredResponse();
+  const result = await requireWorkspaceSession(request);
+  if ("response" in result) return result.response;
+  const { session } = result;
 
   const cursor = request.nextUrl.searchParams.get("cursor") ?? undefined;
   const limitParam = request.nextUrl.searchParams.get("limit");
