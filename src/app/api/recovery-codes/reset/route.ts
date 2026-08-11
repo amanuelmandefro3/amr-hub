@@ -3,16 +3,9 @@ import {
   resetPasswordWithRecoveryCode,
 } from "../../../../server/recovery";
 import { resetWithRecoveryCodeSchema } from "../../../../server/recoverySchemas";
+import { requestAddress } from "../../../../server/requestAddress";
 
 const RECOVERY_WINDOW_MS = 15 * 60 * 1_000;
-
-function requestAddress(request: Request) {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
 
 export async function POST(request: Request) {
   const validation = resetWithRecoveryCodeSchema.safeParse(
