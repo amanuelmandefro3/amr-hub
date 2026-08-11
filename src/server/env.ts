@@ -37,6 +37,8 @@ export const serverEnvironmentSchema = z.object({
   DIRECT_URL: postgresUrlSchema,
   NEXT_PUBLIC_APP_URL: httpUrlSchema.optional(),
   BETTER_AUTH_SECRET: z.string().min(32),
+  RESEND_API_KEY: z.string().trim().min(1),
+  EMAIL_FROM: z.string().trim().min(1),
 });
 
 export function loadServerEnvironment(
