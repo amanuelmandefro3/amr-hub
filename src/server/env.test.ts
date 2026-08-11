@@ -25,4 +25,24 @@ describe("loadServerEnvironment", () => {
       loadServerEnvironment({ ...validEnvironment, ...change }),
     ).toThrow("Invalid server environment");
   });
+
+  it("rejects a production environment missing the public app URL", () => {
+    expect(() =>
+      loadServerEnvironment({
+        ...validEnvironment,
+        NODE_ENV: "production",
+        NEXT_PUBLIC_APP_URL: undefined,
+      }),
+    ).toThrow("NEXT_PUBLIC_APP_URL is required in production");
+  });
+
+  it("allows a non-production environment to fall back on the public app URL", () => {
+    expect(() =>
+      loadServerEnvironment({
+        ...validEnvironment,
+        NODE_ENV: "development",
+        NEXT_PUBLIC_APP_URL: undefined,
+      }),
+    ).not.toThrow();
+  });
 });

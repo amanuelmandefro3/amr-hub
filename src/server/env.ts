@@ -51,5 +51,11 @@ export function loadServerEnvironment(
     throw new Error(`Invalid server environment - ${fields}`);
   }
 
+  if (environment.NODE_ENV === "production" && !result.data.NEXT_PUBLIC_APP_URL) {
+    throw new Error(
+      "Invalid server environment - NEXT_PUBLIC_APP_URL is required in production",
+    );
+  }
+
   return result.data;
 }
