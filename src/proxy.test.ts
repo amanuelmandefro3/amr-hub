@@ -9,6 +9,12 @@ describe("public route access", () => {
     expect(isPublicPath("/invite/example-token")).toBe(true);
   });
 
+  it("keeps the password recovery flow public", () => {
+    expect(isPublicPath("/forgot-password")).toBe(true);
+    expect(isPublicPath("/forgot-password/recovery-code")).toBe(true);
+    expect(isPublicPath("/reset-password")).toBe(true);
+  });
+
   it("keeps workspace routes behind authentication", () => {
     expect(isPublicPath("/dashboard")).toBe(false);
     expect(isPublicPath("/issues")).toBe(false);
