@@ -10,6 +10,7 @@ import NavBar from "./NavBar";
 
 const AUTH_ROUTES = [
   "/forgot-password",
+  "/reset-password",
   "/login",
   "/onboarding",
   "/signup",
@@ -18,18 +19,22 @@ const AUTH_ROUTES = [
   "/two-factor",
 ];
 
+export function isAuthRoute(pathname: string) {
+  return AUTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLandingRoute = pathname === "/";
-  const isAuthRoute = AUTH_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
+  const isOnAuthRoute = isAuthRoute(pathname);
 
   if (isLandingRoute) {
     return <div className="landing-content">{children}</div>;
   }
 
-  if (isAuthRoute) {
+  if (isOnAuthRoute) {
     return <main className="auth-content">{children}</main>;
   }
 
