@@ -1,5 +1,19 @@
-// Content-Security-Policy is set per-request in src/proxy.ts (it needs a
-// fresh nonce per request for App Router's inline hydration scripts).
+// Uses 'unsafe-inline' for scripts rather than per-request nonces: nonces
+// require reading headers() in the root layout, which forces every page
+// (including the public marketing page) into dynamic rendering. This keeps
+// pages statically prerendered at the cost of weaker inline-script defense.
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -16,6 +30,7 @@ const nextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
+          { key: "Content-Security-Policy", value: contentSecurityPolicy },
           ...(process.env.NODE_ENV === "production"
             ? [
                 {

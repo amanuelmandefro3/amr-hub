@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import "./globals.css";
 import "./retro.css";
 import { AppShell } from "./AppShell";
@@ -46,24 +45,15 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        {/* Browsers strip the nonce attribute from the DOM after using it
-            (so an XSS payload can't read and reuse it), which otherwise
-            shows up as a spurious hydration mismatch on every load. */}
-        <script
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <AppShell>{children}</AppShell>
       </body>
     </html>
