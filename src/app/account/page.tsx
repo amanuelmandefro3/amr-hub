@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { authClient } from "../../lib/auth-client";
 import RecoveryCodeSettings from "../components/RecoveryCodeSettings";
+import SecurityActivity from "../components/SecurityActivity";
 import SessionManager from "../components/SessionManager";
 import TwoFactorSettings from "../components/TwoFactorSettings";
 
@@ -323,6 +324,8 @@ export default function AccountPage() {
         <SessionManager
           currentSessionToken={session?.session.token ?? null}
         />
+
+        <SecurityActivity />
 
         {isOwner && (
           <section className="account-section team-access-section">

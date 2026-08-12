@@ -22,7 +22,11 @@ export async function DELETE(
   const { session } = result;
 
   const { id } = await context.params;
-  const revoked = await revokeInvitation(id, session.workspace.id);
+  const revoked = await revokeInvitation(
+    id,
+    session.workspace.id,
+    session.user.id,
+  );
 
   if (!revoked) {
     return NextResponse.json(

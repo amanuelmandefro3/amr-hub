@@ -130,6 +130,7 @@ describe("DELETE /api/members/:id", () => {
     expect(mocks.removeWorkspaceMember).toHaveBeenCalledWith(
       "member-1",
       "organization-1",
+      "owner-1",
     );
   });
 

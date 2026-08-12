@@ -29,7 +29,11 @@ export async function DELETE(
     );
   }
 
-  const removed = await removeWorkspaceMember(id, session.workspace.id);
+  const removed = await removeWorkspaceMember(
+    id,
+    session.workspace.id,
+    session.user.id,
+  );
   if (!removed) {
     return NextResponse.json(
       { error: "Workspace member not found" },

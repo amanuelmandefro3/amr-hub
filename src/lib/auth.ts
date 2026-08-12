@@ -1,11 +1,15 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { organization, twoFactor } from "better-auth/plugins";
 import prisma from "../../prisma/client";
 import { sendEmail } from "../server/email";
 import { loadServerEnvironment } from "../server/env";
 import { organizationOnboardingSchema } from "../server/organizationSchemas";
+import {
+  recordSecurityEvent,
+  type SecurityEventType,
+} from "../server/securityEvents";
 
 const environment = loadServerEnvironment();
 const vercelDeploymentUrl = process.env.VERCEL_URL
@@ -47,6 +51,9 @@ export const auth = betterAuth({
         text: `Reset your AMR Hub password: ${url}\n\nThis link expires in 1 hour. If you didn't request this, you can ignore this email - your password will not change.`,
         html: `<p>Reset your AMR Hub password.</p><p><a href="${url}">Reset password</a></p><p>This link expires in 1 hour. If you didn't request this, you can ignore this email - your password will not change.</p>`,
       });
+    },
+    onPasswordReset: async ({ user }) => {
+      await recordSecurityEvent({ type: "password_reset", userId: user.id });
     },
   },
   emailVerification: {
@@ -97,6 +104,26 @@ export const auth = betterAuth({
         },
       },
     },
+  },
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.context.returned instanceof APIError) return;
+
+      const eventByPath: Partial<Record<string, SecurityEventType>> = {
+        "/change-password": "password_changed",
+        "/two-factor/enable": "two_factor_enabled",
+        "/two-factor/disable": "two_factor_disabled",
+        "/revoke-session": "session_revoked",
+        "/revoke-sessions": "sessions_revoked",
+        "/revoke-other-sessions": "sessions_revoked",
+      };
+
+      const type = eventByPath[ctx.path];
+      const userId = ctx.context.session?.user?.id;
+      if (!type || !userId) return;
+
+      await recordSecurityEvent({ type, userId });
+    }),
   },
   rateLimit: {
     enabled: true,

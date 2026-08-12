@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
 import prisma from "../../prisma/client";
+import { recordSecurityEvent } from "./securityEvents";
 
 const RECOVERY_CODE_COUNT = 10;
 const RECOVERY_CODE_LIFETIME_MS = 365 * 24 * 60 * 60 * 1_000;
@@ -72,7 +73,7 @@ export async function resetPasswordWithRecoveryCode(input: {
   const passwordHash = await hashPassword(input.newPassword);
   const now = new Date();
 
-  return prisma.$transaction(async (transaction) => {
+  const result = await prisma.$transaction(async (transaction) => {
     const recoveryCode = await transaction.recoveryCode.findFirst({
       where: {
         codeHash,
@@ -83,7 +84,7 @@ export async function resetPasswordWithRecoveryCode(input: {
       select: { id: true, userId: true },
     });
 
-    if (!recoveryCode) return false;
+    if (!recoveryCode) return null;
 
     const claimed = await transaction.recoveryCode.updateMany({
       where: {
@@ -94,7 +95,7 @@ export async function resetPasswordWithRecoveryCode(input: {
       data: { usedAt: now },
     });
 
-    if (claimed.count !== 1) return false;
+    if (claimed.count !== 1) return null;
 
     const credential = await transaction.account.updateMany({
       where: {
@@ -119,8 +120,14 @@ export async function resetPasswordWithRecoveryCode(input: {
       where: { userId: recoveryCode.userId },
     });
 
-    return true;
+    return recoveryCode.userId;
   });
+
+  if (result) {
+    await recordSecurityEvent({ type: "password_reset", userId: result });
+  }
+
+  return result !== null;
 }
 
 export async function consumeRecoveryRateLimit(

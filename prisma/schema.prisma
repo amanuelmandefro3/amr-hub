@@ -206,6 +206,7 @@ model User {
   organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")
   createdIssues           Issue[]                  @relation("IssueCreator")
   notifications           Notification[]
+  securityEvents          SecurityEvent[]
 
   @@map("user")
 }
@@ -228,6 +229,7 @@ model Organization {
   cycles                  Cycle[]
   projects                Project[]
   notifications           Notification[]
+  securityEvents          SecurityEvent[]
 
   @@map("organization")
 }
@@ -348,6 +350,21 @@ model RecoveryCode {
   @@index([userId, usedAt])
   @@index([expiresAt])
   @@map("recoveryCode")
+}
+
+model SecurityEvent {
+  id             String        @id @default(cuid())
+  type           String
+  metadata       String?
+  createdAt      DateTime      @default(now())
+  userId         String?
+  organizationId String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
+  @@map("securityEvent")
 }
 
 model Verification {

@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import prisma from "../../prisma/client";
 import { auth } from "../lib/auth";
+import { recordSecurityEvent } from "./securityEvents";
 
 const INVITATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -133,6 +134,13 @@ export async function createMemberInvitation(
       });
     });
 
+    await recordSecurityEvent({
+      type: "invitation_created",
+      userId: invitedBy,
+      organizationId,
+      metadata: { email: normalizedEmail, role },
+    });
+
     return {
       invitation: {
         id: invitation.id,
@@ -226,7 +234,7 @@ export async function acceptMemberInvitation(input: {
   }
 
   try {
-    return await prisma.$transaction(async (transaction) => {
+    const accepted = await prisma.$transaction(async (transaction) => {
       const claimed = await transaction.invitation.updateMany({
         where: {
           id: invitation.id,
@@ -251,6 +259,15 @@ export async function acceptMemberInvitation(input: {
 
       return { id: userId, email: invitation.email };
     });
+
+    await recordSecurityEvent({
+      type: "invitation_accepted",
+      userId,
+      organizationId: invitation.organizationId,
+      metadata: { email: invitation.email },
+    });
+
+    return accepted;
   } catch (error) {
     // The account already exists at this point; don't leave it orphaned if
     // the invitation was claimed by a concurrent request or expired mid-flight.
@@ -262,7 +279,17 @@ export async function acceptMemberInvitation(input: {
   }
 }
 
-export async function revokeInvitation(id: string, organizationId: string) {
+export async function revokeInvitation(
+  id: string,
+  organizationId: string,
+  revokedBy: string,
+) {
+  const invitation = await prisma.invitation.findFirst({
+    where: { id, organizationId, status: "PENDING" },
+    select: { email: true },
+  });
+  if (!invitation) return false;
+
   const result = await prisma.invitation.updateMany({
     where: {
       id,
@@ -271,6 +298,15 @@ export async function revokeInvitation(id: string, organizationId: string) {
     },
     data: { status: "REVOKED" },
   });
+
+  if (result.count === 1) {
+    await recordSecurityEvent({
+      type: "invitation_revoked",
+      userId: revokedBy,
+      organizationId,
+      metadata: { email: invitation.email },
+    });
+  }
 
   return result.count === 1;
 }

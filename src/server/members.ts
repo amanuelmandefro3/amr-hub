@@ -1,5 +1,6 @@
 import prisma from "../../prisma/client";
 import type { WorkspaceMember } from "../app/data/issues";
+import { recordSecurityEvent } from "./securityEvents";
 
 export async function listOrganizationMembers(
   organizationId: string,
@@ -24,6 +25,7 @@ export async function listOrganizationMembers(
 export async function removeWorkspaceMember(
   userId: string,
   organizationId: string,
+  removedBy: string,
 ) {
   const result = await prisma.member.deleteMany({
     where: {
@@ -39,6 +41,12 @@ export async function removeWorkspaceMember(
         userId,
         activeOrganizationId: organizationId,
       },
+    });
+    await recordSecurityEvent({
+      type: "member_removed",
+      userId: removedBy,
+      organizationId,
+      metadata: { removedUserId: userId },
     });
   }
 
