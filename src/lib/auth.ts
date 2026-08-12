@@ -6,6 +6,11 @@ import { organization, twoFactor } from "better-auth/plugins";
 import prisma from "../../prisma/client";
 import { sendEmail } from "../server/email";
 import { loadServerEnvironment } from "../server/env";
+import {
+  clearLoginAttempts,
+  getLoginLockout,
+  recordFailedLogin,
+} from "../server/loginThrottle";
 import { organizationOnboardingSchema } from "../server/organizationSchemas";
 import {
   recordSecurityEvent,
@@ -108,8 +113,43 @@ export const auth = betterAuth({
     },
   },
   hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-in/email") return;
+      const email = ctx.body?.email;
+      if (typeof email !== "string") return;
+
+      const lockedUntil = await getLoginLockout(email);
+      if (!lockedUntil) return;
+
+      const minutes = Math.max(
+        1,
+        Math.ceil((lockedUntil.getTime() - Date.now()) / 60_000),
+      );
+      throw new APIError("FORBIDDEN", {
+        message: `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+        code: "ACCOUNT_LOCKED",
+      });
+    }),
     after: createAuthMiddleware(async (ctx) => {
-      if (ctx.context.returned instanceof APIError) return;
+      const isError = ctx.context.returned instanceof APIError;
+
+      if (ctx.path === "/sign-in/email") {
+        const email = ctx.body?.email;
+        if (typeof email === "string") {
+          const failedWithCredentials =
+            isError &&
+            (ctx.context.returned as InstanceType<typeof APIError>).body
+              ?.code === "INVALID_EMAIL_OR_PASSWORD";
+
+          if (failedWithCredentials) {
+            await recordFailedLogin(email);
+          } else if (!isError) {
+            await clearLoginAttempts(email);
+          }
+        }
+      }
+
+      if (isError) return;
 
       const eventByPath: Partial<Record<string, SecurityEventType>> = {
         "/change-password": "password_changed",

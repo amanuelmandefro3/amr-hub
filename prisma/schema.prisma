@@ -358,6 +358,15 @@ model Passkey {
   @@map("passkey")
 }
 
+model LoginAttempt {
+  email       String    @id
+  failedCount Int       @default(0)
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@map("loginAttempt")
+}
+
 model RecoveryCode {
   id        String    @id
   codeHash  String    @unique

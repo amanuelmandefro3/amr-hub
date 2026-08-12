@@ -64,6 +64,8 @@ export default function LoginPage() {
     if (result.error) {
       if (result.error.status === 429) {
         setError("Too many attempts. Wait a minute and try again.");
+      } else if (result.error.code === "ACCOUNT_LOCKED") {
+        setError(result.error.message ?? "Too many failed attempts. Try again shortly.");
       } else if (result.error.status === 403) {
         setError(
           "Verify your email before signing in. We just sent a new confirmation link to your inbox.",
