@@ -1,3 +1,4 @@
+import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError, createAuthMiddleware } from "better-auth/api";
@@ -24,6 +25,7 @@ const trustedOrigins = [
   environment.NEXT_PUBLIC_APP_URL,
   vercelDeploymentUrl,
 ].filter((origin): origin is string => Boolean(origin));
+const passkeyRpId = new URL(applicationUrl).hostname;
 
 export const auth = betterAuth({
   appName: "AMR Hub",
@@ -113,6 +115,8 @@ export const auth = betterAuth({
         "/change-password": "password_changed",
         "/two-factor/enable": "two_factor_enabled",
         "/two-factor/disable": "two_factor_disabled",
+        "/passkey/verify-registration": "passkey_added",
+        "/passkey/delete-passkey": "passkey_removed",
         "/revoke-session": "session_revoked",
         "/revoke-sessions": "sessions_revoked",
         "/revoke-other-sessions": "sessions_revoked",
@@ -205,6 +209,10 @@ export const auth = betterAuth({
         maxFailedAttempts: 5,
         durationSeconds: 60 * 15,
       },
+    }),
+    passkey({
+      rpID: passkeyRpId,
+      rpName: "AMR Hub",
     }),
   ],
   advanced: {

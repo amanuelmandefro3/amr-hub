@@ -12,6 +12,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { authClient } from "../../lib/auth-client";
+import PasskeySettings from "../components/PasskeySettings";
 import RecoveryCodeSettings from "../components/RecoveryCodeSettings";
 import SecurityActivity from "../components/SecurityActivity";
 import SessionManager from "../components/SessionManager";
@@ -318,6 +319,8 @@ export default function AccountPage() {
             await refetchSession();
           }}
         />
+
+        <PasskeySettings />
 
         <RecoveryCodeSettings />
 

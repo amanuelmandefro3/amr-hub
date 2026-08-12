@@ -5,6 +5,8 @@ export type SecurityEventType =
   | "password_reset"
   | "two_factor_enabled"
   | "two_factor_disabled"
+  | "passkey_added"
+  | "passkey_removed"
   | "session_revoked"
   | "sessions_revoked"
   | "invitation_created"

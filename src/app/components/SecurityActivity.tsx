@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  Fingerprint,
   KeyRound,
   LoaderCircle,
   LogOut,
@@ -23,6 +24,8 @@ const eventVisuals: Record<string, { icon: typeof KeyRound; tone: string }> = {
   password_reset: { icon: KeyRound, tone: "amber" },
   two_factor_enabled: { icon: ShieldCheck, tone: "green" },
   two_factor_disabled: { icon: ShieldCheck, tone: "red" },
+  passkey_added: { icon: Fingerprint, tone: "green" },
+  passkey_removed: { icon: Fingerprint, tone: "red" },
   session_revoked: { icon: LogOut, tone: "blue" },
   sessions_revoked: { icon: LogOut, tone: "blue" },
   invitation_created: { icon: Mail, tone: "blue" },
@@ -41,6 +44,10 @@ function describeEvent(event: SecurityEvent) {
       return "Two-factor authentication enabled";
     case "two_factor_disabled":
       return "Two-factor authentication disabled";
+    case "passkey_added":
+      return "Passkey added";
+    case "passkey_removed":
+      return "Passkey removed";
     case "session_revoked":
       return "Signed out a device";
     case "sessions_revoked":

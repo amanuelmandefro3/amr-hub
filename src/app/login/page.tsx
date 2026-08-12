@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
+  Fingerprint,
   LoaderCircle,
   LockKeyhole,
 } from "lucide-react";
@@ -20,6 +21,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSigningInWithPasskey, setIsSigningInWithPasskey] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,6 +31,24 @@ export default function LoginPage() {
     }
 
   }, [router, session]);
+
+  const goToWorkspace = async () => {
+    const organizations = await authClient.organization.list();
+
+    if (!organizations.error && organizations.data.length === 0) {
+      router.replace("/onboarding");
+      return;
+    }
+
+    if (!organizations.error && organizations.data[0]) {
+      await authClient.organization.setActive({
+        organizationId: organizations.data[0].id,
+      });
+    }
+
+    router.replace("/dashboard");
+    router.refresh();
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -59,21 +79,22 @@ export default function LoginPage() {
       return;
     }
 
-    const organizations = await authClient.organization.list();
+    await goToWorkspace();
+  };
 
-    if (!organizations.error && organizations.data.length === 0) {
-      router.replace("/onboarding");
+  const handlePasskeySignIn = async () => {
+    setError(null);
+    setIsSigningInWithPasskey(true);
+
+    const result = await authClient.signIn.passkey();
+    setIsSigningInWithPasskey(false);
+
+    if (result?.error) {
+      setError("Passkey sign-in did not complete. Try again or use your password.");
       return;
     }
 
-    if (!organizations.error && organizations.data[0]) {
-      await authClient.organization.setActive({
-        organizationId: organizations.data[0].id,
-      });
-    }
-
-    router.replace("/dashboard");
-    router.refresh();
+    await goToWorkspace();
   };
 
   return (
@@ -170,6 +191,20 @@ export default function LoginPage() {
               {isSubmitting ? "Signing in" : "Continue"}
             </button>
           </form>
+
+          <button
+            className="secondary-button auth-submit"
+            type="button"
+            onClick={() => void handlePasskeySignIn()}
+            disabled={isSigningInWithPasskey}
+          >
+            {isSigningInWithPasskey ? (
+              <LoaderCircle className="spinning-icon" size={16} aria-hidden="true" />
+            ) : (
+              <Fingerprint size={16} aria-hidden="true" />
+            )}
+            Sign in with a passkey
+          </button>
 
           <p className="auth-setup-link">
             New to AMR Hub? <Link href="/signup">Create a workspace</Link>
