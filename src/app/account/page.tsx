@@ -147,11 +147,12 @@ export default function AccountPage() {
       return;
     }
 
+    const invitedEmail = inviteEmail.trim();
     setInviteUrl(result.inviteUrl);
     setInviteEmail("");
     setInviteRole("member");
     setInviteStatus(
-      "Invitation link created. It is shown once, so copy it now.",
+      `Invitation sent to ${invitedEmail}. You can also copy the link below to share it directly.`,
     );
     await refreshWorkspaceAccess();
   };
@@ -338,7 +339,7 @@ export default function AccountPage() {
               </span>
               <div>
                 <h2>Team access</h2>
-                <p>Create one-time links for trusted workspace members.</p>
+                <p>Invite trusted workspace members by email.</p>
               </div>
             </header>
 
@@ -381,14 +382,14 @@ export default function AccountPage() {
                 ) : (
                   <MailPlus size={15} aria-hidden="true" />
                 )}
-                Create invite link
+                Send invite
               </button>
             </form>
 
             {inviteUrl && (
               <div className="invite-link-result">
                 <input
-                  aria-label="New invitation link"
+                  aria-label="Backup invitation link"
                   value={inviteUrl}
                   readOnly
                   onFocus={(event) => event.currentTarget.select()}

@@ -65,6 +65,10 @@ export async function POST(request: NextRequest) {
       request.nextUrl.origin,
       session.workspace.id,
       validation.data.role,
+      {
+        inviterName: session.user.name,
+        organizationName: session.workspace.name,
+      },
     );
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

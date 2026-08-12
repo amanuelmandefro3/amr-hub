@@ -2,6 +2,8 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import prisma from "../../prisma/client";
 import { auth } from "../lib/auth";
+import { sendEmail } from "./email";
+import { renderBrandedEmail } from "./emailTemplates";
 import { recordSecurityEvent } from "./securityEvents";
 
 const INVITATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
@@ -99,6 +101,7 @@ export async function createMemberInvitation(
   origin: string,
   organizationId: string,
   role: "member" | "viewer" = "member",
+  context: { inviterName: string; organizationName: string },
 ) {
   const normalizedEmail = normalizeInvitationEmail(email);
   const token = createInvitationToken();
@@ -141,6 +144,26 @@ export async function createMemberInvitation(
       metadata: { email: normalizedEmail, role },
     });
 
+    const inviteUrl = new URL(`/invite/${token}`, origin).toString();
+
+    try {
+      const { html, text } = renderBrandedEmail({
+        heading: "You're invited",
+        intro: `${context.inviterName} invited you to join ${context.organizationName} on AMR Hub as a ${role}.`,
+        ctaLabel: "Accept invitation",
+        url: inviteUrl,
+        note: "This invitation expires in 7 days. If you weren't expecting this, you can ignore this email.",
+      });
+      await sendEmail({
+        to: normalizedEmail,
+        subject: `${context.inviterName} invited you to join ${context.organizationName} on AMR Hub`,
+        html,
+        text,
+      });
+    } catch (error) {
+      console.error("Failed to send invitation email", error);
+    }
+
     return {
       invitation: {
         id: invitation.id,
@@ -150,7 +173,7 @@ export async function createMemberInvitation(
         expiresAt: invitation.expiresAt.toISOString(),
         createdAt: invitation.createdAt.toISOString(),
       },
-      inviteUrl: new URL(`/invite/${token}`, origin).toString(),
+      inviteUrl,
     };
   } catch (error) {
     if (
