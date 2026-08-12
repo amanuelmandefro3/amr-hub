@@ -5,6 +5,7 @@ import { APIError, createAuthMiddleware } from "better-auth/api";
 import { organization, twoFactor } from "better-auth/plugins";
 import prisma from "../../prisma/client";
 import { sendEmail } from "../server/email";
+import { renderBrandedEmail } from "../server/emailTemplates";
 import { loadServerEnvironment } from "../server/env";
 import {
   clearLoginAttempts,
@@ -52,11 +53,18 @@ export const auth = betterAuth({
     resetPasswordTokenExpiresIn: 60 * 60,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
+      const { html, text } = renderBrandedEmail({
+        heading: "Reset your password",
+        intro: "We received a request to reset your AMR Hub password.",
+        ctaLabel: "Reset password",
+        url,
+        note: "This link expires in 1 hour. If you didn't request this, you can ignore this email - your password will not change.",
+      });
       await sendEmail({
         to: user.email,
         subject: "Reset your AMR Hub password",
-        text: `Reset your AMR Hub password: ${url}\n\nThis link expires in 1 hour. If you didn't request this, you can ignore this email - your password will not change.`,
-        html: `<p>Reset your AMR Hub password.</p><p><a href="${url}">Reset password</a></p><p>This link expires in 1 hour. If you didn't request this, you can ignore this email - your password will not change.</p>`,
+        html,
+        text,
       });
     },
     onPasswordReset: async ({ user }) => {
@@ -69,11 +77,19 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     expiresIn: 60 * 60 * 24,
     sendVerificationEmail: async ({ user, url }) => {
+      const { html, text } = renderBrandedEmail({
+        heading: "Verify your email",
+        intro:
+          "Confirm your email address to finish setting up your AMR Hub account.",
+        ctaLabel: "Verify email",
+        url,
+        note: "This link expires in 24 hours. If you didn't create this account, you can ignore this email.",
+      });
       await sendEmail({
         to: user.email,
         subject: "Verify your email for AMR Hub",
-        text: `Confirm your email address to finish setting up your AMR Hub account: ${url}\n\nThis link expires in 24 hours. If you didn't create this account, you can ignore this email.`,
-        html: `<p>Confirm your email address to finish setting up your AMR Hub account.</p><p><a href="${url}">Verify email</a></p><p>This link expires in 24 hours. If you didn't create this account, you can ignore this email.</p>`,
+        html,
+        text,
       });
     },
   },

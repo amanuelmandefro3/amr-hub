@@ -59,6 +59,7 @@ export default function LoginPage() {
       email: email.trim(),
       password,
       rememberMe,
+      callbackURL: "/onboarding",
     });
 
     if (result.error) {
