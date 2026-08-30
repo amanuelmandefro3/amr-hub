@@ -4,15 +4,19 @@ import Link from "next/link";
 import {
   Activity,
   ArrowRight,
-  Bookmark,
   CalendarRange,
   Check,
   CircleCheck,
   Clock3,
+  Fingerprint,
+  Flame,
+  FolderKanban,
   Gauge,
   Inbox,
   KeyRound,
+  LayoutDashboard,
   ListFilter,
+  ListTodo,
   LockKeyhole,
   MessageSquareText,
   ShieldCheck,
@@ -28,33 +32,34 @@ export const metadata: Metadata = {
     "Triage issues, plan delivery cycles, and keep product work accountable in a secure organization workspace.",
 };
 
-const heroIssues = [
+const heroMetrics = [
   {
-    id: "AMR-128",
-    title: "Checkout stalls after applying a promo code",
-    priority: "Urgent",
-    priorityClass: "urgent",
-    status: "In progress",
-    statusClass: "progress",
-    owner: "MC",
+    label: "Active issues",
+    value: "24",
+    note: "6 added this week",
+    icon: Inbox,
+    tone: "blue",
   },
   {
-    id: "AMR-127",
-    title: "Add saved views for support triage",
-    priority: "High",
-    priorityClass: "high",
-    status: "Backlog",
-    statusClass: "backlog",
-    owner: "AR",
+    label: "In progress",
+    value: "9",
+    note: "Across 4 owners",
+    icon: Clock3,
+    tone: "amber",
   },
   {
-    id: "AMR-126",
-    title: "Improve first-run workspace state",
-    priority: "Medium",
-    priorityClass: "medium",
-    status: "Done",
-    statusClass: "done",
-    owner: "JB",
+    label: "Completion rate",
+    value: "68%",
+    note: "34 of 50 issues",
+    icon: CircleCheck,
+    tone: "green",
+  },
+  {
+    label: "Urgent",
+    value: "3",
+    note: "Needs attention today",
+    icon: Flame,
+    tone: "red",
   },
 ];
 
@@ -64,6 +69,10 @@ const triageIssues = [
     title: "Checkout stalls after applying a promo code",
     label: "Bug",
     labelClass: "bug",
+    priority: "Urgent",
+    priorityClass: "urgent",
+    status: "In progress",
+    statusClass: "progress",
     owner: "Maya",
     due: "Today",
   },
@@ -72,6 +81,10 @@ const triageIssues = [
     title: "Add saved views for support triage",
     label: "Product",
     labelClass: "product",
+    priority: "High",
+    priorityClass: "high",
+    status: "Backlog",
+    statusClass: "backlog",
     owner: "Amanuel",
     due: "Aug 2",
   },
@@ -80,6 +93,10 @@ const triageIssues = [
     title: "Record status changes in issue activity",
     label: "Platform",
     labelClass: "platform",
+    priority: "Medium",
+    priorityClass: "medium",
+    status: "Done",
+    statusClass: "done",
     owner: "Jon",
     due: "Aug 4",
   },
@@ -153,46 +170,35 @@ export default function LandingPage() {
             <div className="landing-scene-body">
               <aside className="landing-scene-sidebar">
                 <span className="active">
-                  <Inbox size={13} />
+                  <LayoutDashboard size={13} />
+                  Overview
+                </span>
+                <span>
+                  <FolderKanban size={13} />
+                  Projects
+                </span>
+                <span>
+                  <ListTodo size={13} />
                   Issues
-                </span>
-                <span>
-                  <CalendarRange size={13} />
-                  Cycles
-                </span>
-                <span>
-                  <Bookmark size={13} />
-                  Views
                 </span>
               </aside>
               <div className="landing-scene-main">
                 <div className="landing-scene-heading">
                   <div>
-                    <small>Workspace</small>
-                    <strong>Issues</strong>
+                    <small>Workspace status // Live</small>
+                    <strong>Mission control</strong>
                   </div>
-                  <span>+ New issue</span>
+                  <span>Live</span>
                 </div>
-                <div className="landing-scene-tabs">
-                  <span className="active">Active 12</span>
-                  <span>Backlog 8</span>
-                  <span>Completed 34</span>
-                </div>
-                <div className="landing-scene-table">
-                  {heroIssues.map((issue) => (
-                    <div className="landing-scene-row" key={issue.id}>
-                      <i className={`landing-priority-dot ${issue.priorityClass}`} />
-                      <span className="landing-scene-issue">
-                        <small>{issue.id}</small>
-                        <strong>{issue.title}</strong>
-                      </span>
-                      <span className={`landing-scene-priority ${issue.priorityClass}`}>
-                        {issue.priority}
-                      </span>
-                      <span className={`landing-scene-status ${issue.statusClass}`}>
-                        {issue.status}
-                      </span>
-                      <span className="landing-scene-owner">{issue.owner}</span>
+                <div className="landing-scene-metrics">
+                  {heroMetrics.map((metric) => (
+                    <div
+                      className={`landing-scene-metric tone-${metric.tone}`}
+                      key={metric.label}
+                    >
+                      <metric.icon size={13} aria-hidden="true" />
+                      <strong>{metric.value}</strong>
+                      <small>{metric.label}</small>
                     </div>
                   ))}
                 </div>
@@ -285,6 +291,8 @@ export default function LandingPage() {
               </div>
               <div className="landing-demo-head" aria-hidden="true">
                 <span>Issue</span>
+                <span>Priority</span>
+                <span>Status</span>
                 <span>Owner</span>
                 <span>Due</span>
               </div>
@@ -294,6 +302,12 @@ export default function LandingPage() {
                     <small>{issue.id}</small>
                     <strong>{issue.title}</strong>
                     <i className={issue.labelClass}>{issue.label}</i>
+                  </span>
+                  <span className={`landing-demo-priority ${issue.priorityClass}`}>
+                    {issue.priority}
+                  </span>
+                  <span className={`landing-demo-status ${issue.statusClass}`}>
+                    {issue.status}
                   </span>
                   <span>{issue.owner}</span>
                   <time className={issue.due === "Today" ? "due" : ""}>
@@ -395,6 +409,13 @@ export default function LandingPage() {
                   <span>
                     <strong>Organization isolation</strong>
                     <small>Workspace data follows active membership.</small>
+                  </span>
+                </div>
+                <div>
+                  <Fingerprint size={17} aria-hidden="true" />
+                  <span>
+                    <strong>Passkey sign-in</strong>
+                    <small>Passwordless, device-bound authentication.</small>
                   </span>
                 </div>
                 <div>
